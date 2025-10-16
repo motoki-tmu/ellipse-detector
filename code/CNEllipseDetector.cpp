@@ -1,19 +1,13 @@
-/*
-This code is intended for academic use only.
-You are free to use and modify the code, at your own risk.
-
-If you use this code, or find it useful, please refer to the paper:
-
-
-The comments in the code refer to the abovementioned paper.
-If you need further details about the code or the algorithm, please contact me at:
-
-lianbosong@foxmail.com
-
-last update: 
-*/
+// CNEllipseDetector
 
 #include "CNEllipseDetector.h"
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
+#include <ctime>
 
 
 bool myselect1=true;
@@ -25,7 +19,7 @@ float tTCNl=0.05f;//����ֱ̫������
 CNEllipseDetector::CNEllipseDetector(void) : _times(6, 0.0), _timesHelper(6, 0.0)
 {
 	// Default Parameters Settings
-	_szPreProcessingGaussKernelSize = Size(5, 5);
+	_szPreProcessingGaussKernelSize = cv::Size(5, 5);
 	_dPreProcessingGaussSigma = 1.0;
 	_fThPosition = 1.0f;
 	_fMaxCenterDistance = 100.0f * 0.05f;
@@ -45,7 +39,7 @@ CNEllipseDetector::~CNEllipseDetector(void)
 {
 }
 
-void CNEllipseDetector::SetParameters(Size	szPreProcessingGaussKernelSize,
+void CNEllipseDetector::SetParameters(cv::Size	szPreProcessingGaussKernelSize,
 										 double	dPreProcessingGaussSigma,
 										 float 	fThPosition,
 										 float	fMaxCenterDistance,
@@ -113,14 +107,14 @@ int CNEllipseDetector::FindMaxA(const int* v) const
 	return max_idx;
 };
 
-float CNEllipseDetector::GetMedianSlope(vector<Point2f>& med, Point2f& M, vector<float>& slopes)
+float CNEllipseDetector::GetMedianSlope(vector<cv::Point2f>& med, cv::Point2f& M, vector<float>& slopes)
 {//input med slopes ;output:M return  
 	// med		: vector of points  
 	// M		: centroid of the points in med  
 	// slopes	: vector of the slopes  
 
 	unsigned iNofPoints = med.size();
-	//CV_Assert(iNofPoints >= 2);
+	//cv::Assert(iNofPoints >= 2);
 
 	unsigned halfSize = iNofPoints >> 1;
 	unsigned quarterSize = halfSize >> 1;
@@ -132,8 +126,8 @@ float CNEllipseDetector::GetMedianSlope(vector<Point2f>& med, Point2f& M, vector
 
 	for (unsigned i = 0; i < halfSize; ++i)
 	{
-		Point2f& p1 = med[i];
-		Point2f& p2 = med[halfSize + i];
+		cv::Point2f& p1 = med[i];
+		cv::Point2f& p2 = med[halfSize + i];
 
 		xx.push_back(p1.x);
 		xx.push_back(p2.x);
@@ -158,7 +152,7 @@ float CNEllipseDetector::GetMedianSlope(vector<Point2f>& med, Point2f& M, vector
 };
 
 
-void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, EllipseData& data)
+void CNEllipseDetector::GetFastCenter(vector<cv::Point>& e1, vector<cv::Point>& e2, EllipseData& data)
 {
 	countsOfGetFastCenter++;
 	data.isValid = true;
@@ -169,10 +163,10 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 	unsigned hsize_1 = size_1 >> 1;
 	unsigned hsize_2 = size_2 >> 1;
 
-	Point& med1 = e1[hsize_1];
-	Point& med2 = e2[hsize_2];
+	cv::Point& med1 = e1[hsize_1];
+	cv::Point& med2 = e2[hsize_2];
 
-	Point2f M12, M34;
+	cv::Point2f M12, M34;
 	float q2, q4;
 
 	{// First to second Reference slope
@@ -185,7 +179,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 		data.ra = m_ref;
 
 		// Find points with same slope as reference
-		vector<Point2f> med;
+		vector<cv::Point2f> med;
 		med.reserve(hsize_2);
 
 		unsigned minPoints = (_uNs < hsize_2) ? _uNs : hsize_2;//ƽ���Ҹ���
@@ -223,7 +217,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 			if (sign_begin == 0)
 			{
 				//found
-				med.push_back(Point2f((xb + x1)* 0.5f, (yb + y1)* 0.5f));
+				med.push_back(cv::Point2f((xb + x1)* 0.5f, (yb + y1)* 0.5f));
 				continue;
 			}
 
@@ -234,7 +228,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 			if (sign_end == 0)
 			{
 				//found
-				med.push_back(Point2f((xe + x1)* 0.5f, (ye + y1)* 0.5f));
+				med.push_back(cv::Point2f((xe + x1)* 0.5f, (ye + y1)* 0.5f));
 				continue;
 			}
 			//�����һ��
@@ -255,7 +249,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 				if (sign_res == 0)
 				{
 					//found
-					med.push_back(Point2f((x2 + x1)* 0.5f, (y2 + y1)* 0.5f));
+					med.push_back(cv::Point2f((x2 + x1)* 0.5f, (y2 + y1)* 0.5f));
 					break;
 				}
 
@@ -272,7 +266,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 				j = (begin + end) >> 1;
 			}
 			//���ַ�����ƽ���� end �д�
-			med.push_back(Point2f((e1[j].x + x1)* 0.5f, (e1[j].y + y1)* 0.5f));
+			med.push_back(cv::Point2f((e1[j].x + x1)* 0.5f, (e1[j].y + y1)* 0.5f));
 		}
 
 		if (med.size() < 2)
@@ -295,7 +289,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 		data.rb = m_ref;
 
 		// Find points with same slope as reference
-		vector<Point2f> med;
+		vector<cv::Point2f> med;
 		med.reserve(hsize_1);
 
 		uint minPoints = (_uNs < hsize_1) ? _uNs : hsize_1;
@@ -335,7 +329,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 			if (sign_begin == 0)
 			{
 				//found
-				med.push_back(Point2f((xb + x1)* 0.5f, (yb + y1)* 0.5f));
+				med.push_back(cv::Point2f((xb + x1)* 0.5f, (yb + y1)* 0.5f));
 				continue;
 			}
 
@@ -346,7 +340,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 			if (sign_end == 0)
 			{
 				//found
-				med.push_back(Point2f((xe + x1)* 0.5f, (ye + y1)* 0.5f));
+				med.push_back(cv::Point2f((xe + x1)* 0.5f, (ye + y1)* 0.5f));
 				continue;
 			}
 
@@ -367,7 +361,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 				if (sign_res == 0)
 				{
 					//found
-					med.push_back(Point2f((x2 + x1)* 0.5f, (y2 + y1)* 0.5f));
+					med.push_back(cv::Point2f((x2 + x1)* 0.5f, (y2 + y1)* 0.5f));
 					break;
 				}
 
@@ -384,7 +378,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 				j = (begin + end) >> 1;
 			}
 
-			med.push_back(Point2f((e2[j].x + x1)* 0.5f, (e2[j].y + y1)* 0.5f));
+			med.push_back(cv::Point2f((e2[j].x + x1)* 0.5f, (e2[j].y + y1)* 0.5f));
 		}
 
 		if (med.size() < 2)
@@ -411,7 +405,7 @@ void CNEllipseDetector::GetFastCenter(vector<Point>& e1, vector<Point>& e2, Elli
 };
 
 #define	DISCARD_TCN1
-void CNEllipseDetector::DetectEdges13(Mat1b& DP, VVP& points_1, VVP& points_3)
+void CNEllipseDetector::DetectEdges13(cv::Mat1b& DP, VVP& points_1, VVP& points_3)
 {
 	// Vector of connected edge points
 	VVP contours;
@@ -428,7 +422,7 @@ void CNEllipseDetector::DetectEdges13(Mat1b& DP, VVP& points_1, VVP& points_3)
 
 		// Selection strategy - Step 1 - See Sect [3.1.2] of the paper
 		// Constraint on axes aspect ratio
-		RotatedRect oriented = minAreaRect(edgeSegment);
+		cv::RotatedRect oriented = cv::minAreaRect(edgeSegment);
 		float o_min = min(oriented.size.width, oriented.size.height);
 
 		if (o_min < _fMinOrientedRectSide)
@@ -442,15 +436,15 @@ void CNEllipseDetector::DetectEdges13(Mat1b& DP, VVP& points_1, VVP& points_3)
 		int iEdgeSegmentSize = unsigned(edgeSegment.size());
 
 		// Get extrema of the arc
-		Point& left = edgeSegment[0];
-		Point& right = edgeSegment[iEdgeSegmentSize - 1];
+		cv::Point& left = edgeSegment[0];
+		cv::Point& right = edgeSegment[iEdgeSegmentSize - 1];
 #ifndef DISCARD_TCN
 #ifndef DISCARD_TCN2
 		int flag=0;
 		for(int j=0;j<iEdgeSegmentSize;j++){
-			Point& mid = edgeSegment[j];
+			cv::Point& mid = edgeSegment[j];
 			float data[] = {left.x, left.y, 1,mid.x, mid.y, 1,right.x, right.y, 1};
-			Mat threePoints(Size(3, 3), CV_32FC1, data);
+			cv::Mat threePoints(cv::Size(3, 3), CV_32FC1, data);
 			double ans = determinant(threePoints);
 
 			float dx=1.0f*(left.x-right.x);
@@ -512,7 +506,7 @@ void CNEllipseDetector::DetectEdges13(Mat1b& DP, VVP& points_1, VVP& points_3)
 };
 
 
-void CNEllipseDetector::DetectEdges24(Mat1b& DN, VVP& points_2, VVP& points_4 )
+void CNEllipseDetector::DetectEdges24(cv::Mat1b& DN, VVP& points_2, VVP& points_4 )
 {
 	// Vector of connected edge points
 	VVP contours;
@@ -531,7 +525,7 @@ void CNEllipseDetector::DetectEdges24(Mat1b& DN, VVP& points_2, VVP& points_4 )
 
 		// Selection strategy - Step 1 - See Sect [3.1.2] of the paper
 		// Constraint on axes aspect ratio
-		RotatedRect oriented = minAreaRect(edgeSegment);
+		cv::RotatedRect oriented = cv::minAreaRect(edgeSegment);
 		float o_min = min(oriented.size.width, oriented.size.height);
 
 		if (o_min < _fMinOrientedRectSide)
@@ -545,15 +539,15 @@ void CNEllipseDetector::DetectEdges24(Mat1b& DN, VVP& points_2, VVP& points_4 )
 		int iEdgeSegmentSize = unsigned(edgeSegment.size());
 
 		// Get extrema of the arc
-		Point& left = edgeSegment[0];
-		Point& right = edgeSegment[iEdgeSegmentSize - 1];
+		cv::Point& left = edgeSegment[0];
+		cv::Point& right = edgeSegment[iEdgeSegmentSize - 1];
 #ifndef DISCARD_TCN
 #ifndef DISCARD_TCN2
 		int flag=0;
 		for(int j=0;j<iEdgeSegmentSize;j++){
-			Point& mid = edgeSegment[j];
+			cv::Point& mid = edgeSegment[j];
 			float data[] = {left.x, left.y, 1,mid.x, mid.y, 1,right.x, right.y, 1};
-			Mat threePoints(Size(3, 3), CV_32FC1, data);
+			cv::Mat threePoints(cv::Size(3, 3), CV_32FC1, data);
 			double ans = determinant(threePoints);
 
 			float dx=1.0f*(left.x-right.x);
@@ -619,7 +613,7 @@ void CNEllipseDetector::DetectEdges24(Mat1b& DN, VVP& points_2, VVP& points_4 )
 };
 
 // Most important function for detecting ellipses. See Sect[3.2.3] of the paper
-void CNEllipseDetector::FindEllipses(	Point2f& center,
+void CNEllipseDetector::FindEllipses(	cv::Point2f& center,
 										VP& edge_i,VP& edge_j,VP& edge_k,
 										EllipseData& data_ij,EllipseData& data_ik,
 										vector<Ellipse>& ellipses)
@@ -863,7 +857,7 @@ void CNEllipseDetector::FindEllipses(	Point2f& center,
 	//�����Ż�   
 	for (ushort l = 0; l < sz_ei; ++l)
 	{
-		Point& pp = edge_i[l];
+		cv::Point& pp = edge_i[l];
 		float sk = 1.f / sqrt(Kp*Kp + 1.f);//cos rho
 		float x0 = ((pp.x - a0) * sk) + (((pp.y - b0)*Kp) * sk);//���Ż�
 		float y0 = -(((pp.x - a0) * Kp) * sk) + ((pp.y - b0) * sk);//���Ż�
@@ -877,7 +871,7 @@ void CNEllipseDetector::FindEllipses(	Point2f& center,
 
 	for (ushort l = 0; l < sz_ej; ++l)
 	{
-		Point& pp = edge_j[l];
+		cv::Point& pp = edge_j[l];
 		float sk = 1.f / sqrt(Kp*Kp + 1.f);
 		float x0 = ((pp.x - a0) * sk) + (((pp.y - b0)*Kp) * sk);
 		float y0 = -(((pp.x - a0) * Kp) * sk) + ((pp.y - b0) * sk);
@@ -891,7 +885,7 @@ void CNEllipseDetector::FindEllipses(	Point2f& center,
 
 	for (ushort l = 0; l < sz_ek; ++l)
 	{
-		Point& pp = edge_k[l];
+		cv::Point& pp = edge_k[l];
 		float sk = 1.f / sqrt(Kp*Kp + 1.f);
 		float x0 = ((pp.x - a0) * sk) + (((pp.y - b0)*Kp) * sk);
 		float y0 = -(((pp.x - a0) * Kp) * sk) + ((pp.y - b0) * sk);
@@ -1001,36 +995,36 @@ void CNEllipseDetector::FindEllipses(	Point2f& center,
 
 	float di, dj, dk;
 	{
-		Point2f p1(float(edge_i[0].x), float(edge_i[0].y));
-		Point2f p2(float(edge_i[sz_ei - 1].x), float(edge_i[sz_ei - 1].y));
+		cv::Point2f p1(float(edge_i[0].x), float(edge_i[0].y));
+		cv::Point2f p2(float(edge_i[sz_ei - 1].x), float(edge_i[sz_ei - 1].y));
 		p1.x -= ell._xc;
 		p1.y -= ell._yc;
 		p2.x -= ell._xc;
 		p2.y -= ell._yc;
-		Point2f r1((p1.x*_cos - p1.y*_sin), (p1.x*_sin + p1.y*_cos));
-		Point2f r2((p2.x*_cos - p2.y*_sin), (p2.x*_sin + p2.y*_cos));
+		cv::Point2f r1((p1.x*_cos - p1.y*_sin), (p1.x*_sin + p1.y*_cos));
+		cv::Point2f r2((p2.x*_cos - p2.y*_sin), (p2.x*_sin + p2.y*_cos));
 		di = abs(r2.x - r1.x) + abs(r2.y - r1.y);
 	}
 	{
-		Point2f p1(float(edge_j[0].x), float(edge_j[0].y));
-		Point2f p2(float(edge_j[sz_ej - 1].x), float(edge_j[sz_ej - 1].y));
+		cv::Point2f p1(float(edge_j[0].x), float(edge_j[0].y));
+		cv::Point2f p2(float(edge_j[sz_ej - 1].x), float(edge_j[sz_ej - 1].y));
 		p1.x -= ell._xc;
 		p1.y -= ell._yc;
 		p2.x -= ell._xc;
 		p2.y -= ell._yc;
-		Point2f r1((p1.x*_cos - p1.y*_sin), (p1.x*_sin + p1.y*_cos));
-		Point2f r2((p2.x*_cos - p2.y*_sin), (p2.x*_sin + p2.y*_cos));
+		cv::Point2f r1((p1.x*_cos - p1.y*_sin), (p1.x*_sin + p1.y*_cos));
+		cv::Point2f r2((p2.x*_cos - p2.y*_sin), (p2.x*_sin + p2.y*_cos));
 		dj = abs(r2.x - r1.x) + abs(r2.y - r1.y);
 	}
 	{
-		Point2f p1(float(edge_k[0].x), float(edge_k[0].y));
-		Point2f p2(float(edge_k[sz_ek - 1].x), float(edge_k[sz_ek - 1].y));
+		cv::Point2f p1(float(edge_k[0].x), float(edge_k[0].y));
+		cv::Point2f p2(float(edge_k[sz_ek - 1].x), float(edge_k[sz_ek - 1].y));
 		p1.x -= ell._xc;
 		p1.y -= ell._yc;
 		p2.x -= ell._xc;
 		p2.y -= ell._yc;
-		Point2f r1((p1.x*_cos - p1.y*_sin), (p1.x*_sin + p1.y*_cos));
-		Point2f r2((p2.x*_cos - p2.y*_sin), (p2.x*_sin + p2.y*_cos));
+		cv::Point2f r1((p1.x*_cos - p1.y*_sin), (p1.x*_sin + p1.y*_cos));
+		cv::Point2f r2((p2.x*_cos - p2.y*_sin), (p2.x*_sin + p2.y*_cos));
 		dk = abs(r2.x - r1.x) + abs(r2.y - r1.y);
 	}
 
@@ -1053,7 +1047,7 @@ void CNEllipseDetector::FindEllipses(	Point2f& center,
 };
 
 // Get the coordinates of the center, given the intersection of the estimated lines. See Fig. [8] in Sect [3.2.3] in the paper.
-Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseData& data_ik)
+cv::Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseData& data_ik)
 {
 	float xx[7];
 	float yy[7];
@@ -1067,8 +1061,8 @@ Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseDat
 		//1-1
 		float q2 = data_ij.ta;
 		float q4 = data_ik.ta;
-		Point2f& M12 = data_ij.Ma;
-		Point2f& M34 = data_ik.Ma;
+		cv::Point2f& M12 = data_ij.Ma;
+		cv::Point2f& M34 = data_ik.Ma;
 
 		float invDen = 1 / (q2 - q4);
 		xx[2] = (M34.y - q4*M34.x - M12.y + q2*M12.x) * invDen;
@@ -1079,8 +1073,8 @@ Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseDat
 		//1-2
 		float q2 = data_ij.ta;
 		float q4 = data_ik.tb;
-		Point2f& M12 = data_ij.Ma;
-		Point2f& M34 = data_ik.Mb;
+		cv::Point2f& M12 = data_ij.Ma;
+		cv::Point2f& M34 = data_ik.Mb;
 
 		float invDen = 1 / (q2 - q4);
 		xx[3] = (M34.y - q4*M34.x - M12.y + q2*M12.x) * invDen;
@@ -1091,8 +1085,8 @@ Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseDat
 		//2-2
 		float q2 = data_ij.tb;
 		float q4 = data_ik.tb;
-		Point2f& M12 = data_ij.Mb;
-		Point2f& M34 = data_ik.Mb;
+		cv::Point2f& M12 = data_ij.Mb;
+		cv::Point2f& M34 = data_ik.Mb;
 
 		float invDen = 1 / (q2 - q4);
 		xx[4] = (M34.y - q4*M34.x - M12.y + q2*M12.x) * invDen;
@@ -1103,8 +1097,8 @@ Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseDat
 		//2-1
 		float q2 = data_ij.tb;
 		float q4 = data_ik.ta;
-		Point2f& M12 = data_ij.Mb;
-		Point2f& M34 = data_ik.Ma;
+		cv::Point2f& M12 = data_ij.Mb;
+		cv::Point2f& M34 = data_ik.Ma;
 
 		float invDen = 1 / (q2 - q4);
 		xx[5] = (M34.y - q4*M34.x - M12.y + q2*M12.x) * invDen;
@@ -1121,7 +1115,7 @@ Point2f CNEllipseDetector::GetCenterCoordinates(EllipseData& data_ij, EllipseDat
 	float xc = xx[3];
 	float yc = yy[3];
 
-	return Point2f(xc, yc);
+	return cv::Point2f(xc, yc);
 };
 
 //123456 124 80 48 246
@@ -1153,9 +1147,9 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 		VP& edge_i = pi[i];
 		ushort sz_ei = ushort(edge_i.size());
 
-		Point& pif = edge_i[0];
-		Point& pim = edge_i[sz_ei/2];
-		Point& pil = edge_i[sz_ei - 1];
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei/2];
+		cv::Point& pil = edge_i[sz_ei - 1];
 
 		// 1,2 -> reverse 1, swap
 		VP rev_i(edge_i.size());
@@ -1167,9 +1161,9 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 			VP& edge_j = pj[j];
 			ushort sz_ej = ushort(edge_j.size());
 
-			Point& pjf = edge_j[0];
-			Point& pjm = edge_j[sz_ej/2];
-			Point& pjl = edge_j[sz_ej - 1];
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej/2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 			// CONSTRAINTS on position
@@ -1194,9 +1188,9 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 				VP& edge_k = pk[k];
 				ushort sz_ek = ushort(edge_k.size());
 
-				Point& pkf = edge_k[0];
-				Point& pkm = edge_k[sz_ek/2];
-				Point& pkl = edge_k[sz_ek - 1];
+				cv::Point& pkf = edge_k[0];
+				cv::Point& pkm = edge_k[sz_ek/2];
+				cv::Point& pkl = edge_k[sz_ek - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 				//CONSTRAINTS on position
@@ -1279,7 +1273,7 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 				// Find ellipse parameters
 
 				// Get the coordinates of the center (xc, yc)
-				Point2f center = GetCenterCoordinates(data_ij, data_ik);
+				cv::Point2f center = GetCenterCoordinates(data_ij, data_ik);
 
 				// Find remaining paramters (A,B,rho)
 				FindEllipses(center, edge_i, edge_j, edge_k, data_ij, data_ik, ellipses);
@@ -1307,9 +1301,9 @@ void CNEllipseDetector::Triplets231(VVP& pi,
 		VP& edge_i = pi[i];
 		ushort sz_ei = ushort(edge_i.size());
 
-		Point& pif = edge_i[0];
-		Point& pim = edge_i[sz_ei/2];
-		Point& pil = edge_i[sz_ei - 1];
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei/2];
+		cv::Point& pil = edge_i[sz_ei - 1];
 
 		VP rev_i(edge_i.size());
 		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
@@ -1320,9 +1314,9 @@ void CNEllipseDetector::Triplets231(VVP& pi,
 			VP& edge_j = pj[j];
 			ushort sz_ej = ushort(edge_j.size());
 
-			Point& pjf = edge_j[0];
-			Point& pjm = edge_j[sz_ej/2];
-			Point& pjl = edge_j[sz_ej - 1];			
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej/2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 			// CONSTRAINTS on position
@@ -1353,9 +1347,9 @@ void CNEllipseDetector::Triplets231(VVP& pi,
 				VP& edge_k = pk[k];
 				ushort sz_ek = ushort(edge_k.size());
 
-				Point& pkf = edge_k[0];
-				Point& pkm = edge_k[sz_ek/2];
-				Point& pkl = edge_k[sz_ek - 1];
+				cv::Point& pkf = edge_k[0];
+				cv::Point& pkm = edge_k[sz_ek/2];
+				cv::Point& pkl = edge_k[sz_ek - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 				// CONSTRAINTS on position
@@ -1425,7 +1419,7 @@ void CNEllipseDetector::Triplets231(VVP& pi,
 				}
 #endif
 				// Find ellipse parameters
-				Point2f center = GetCenterCoordinates(data_ij, data_ik);
+				cv::Point2f center = GetCenterCoordinates(data_ij, data_ik);
 
 				FindEllipses(center, edge_i, edge_j, edge_k, data_ij, data_ik, ellipses);
 
@@ -1452,9 +1446,9 @@ void CNEllipseDetector::Triplets342(VVP& pi,
 		VP& edge_i = pi[i];
 		ushort sz_ei = ushort(edge_i.size());
 
-		Point& pif = edge_i[0];
-		Point& pim = edge_i[sz_ei/2];
-		Point& pil = edge_i[sz_ei - 1];
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei/2];
+		cv::Point& pil = edge_i[sz_ei - 1];
 
 		VP rev_i(edge_i.size());
 		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
@@ -1465,9 +1459,9 @@ void CNEllipseDetector::Triplets342(VVP& pi,
 			VP& edge_j = pj[j];
 			ushort sz_ej = ushort(edge_j.size());
 
-			Point& pjf = edge_j[0];
-			Point& pjm = edge_j[sz_ej/2];
-			Point& pjl = edge_j[sz_ej - 1];
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej/2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 			//CONSTRAINTS on position
@@ -1497,9 +1491,9 @@ void CNEllipseDetector::Triplets342(VVP& pi,
 				VP& edge_k = pk[k];
 				ushort sz_ek = ushort(edge_k.size());
 
-				Point& pkf = edge_k[0];
-				Point& pkm = edge_k[sz_ek/2];
-				Point& pkl = edge_k[sz_ek - 1];
+				cv::Point& pkf = edge_k[0];
+				cv::Point& pkm = edge_k[sz_ek/2];
+				cv::Point& pkl = edge_k[sz_ek - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 				//CONSTRAINTS on position
@@ -1572,7 +1566,7 @@ void CNEllipseDetector::Triplets342(VVP& pi,
 				}
 #endif
 				// Find ellipse parameters
-				Point2f center = GetCenterCoordinates(data_ij, data_ik);
+				cv::Point2f center = GetCenterCoordinates(data_ij, data_ik);
 				FindEllipses(center, edge_i, edge_j, edge_k, data_ij, data_ik, ellipses);
 			}
 		}
@@ -1599,9 +1593,9 @@ void CNEllipseDetector::Triplets413(VVP& pi,
 		VP& edge_i = pi[i];
 		ushort sz_ei = ushort(edge_i.size());
 
-		Point& pif = edge_i[0];
-		Point& pim = edge_i[sz_ei/2];
-		Point& pil = edge_i[sz_ei - 1];
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei/2];
+		cv::Point& pil = edge_i[sz_ei - 1];
 
 		VP rev_i(edge_i.size());
 		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
@@ -1612,9 +1606,9 @@ void CNEllipseDetector::Triplets413(VVP& pi,
 			VP& edge_j = pj[j];
 			ushort sz_ej = ushort(edge_j.size());
 
-			Point& pjf = edge_j[0];
-			Point& pjm = edge_j[sz_ej/2];
-			Point& pjl = edge_j[sz_ej - 1];
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej/2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 			//CONSTRAINTS on position
@@ -1641,9 +1635,9 @@ void CNEllipseDetector::Triplets413(VVP& pi,
 				VP& edge_k = pk[k];
 				ushort sz_ek = ushort(edge_k.size());
 
-				Point& pkf = edge_k[0];
-				Point& pkm = edge_k[sz_ek/2];
-				Point& pkl = edge_k[sz_ek - 1];
+				cv::Point& pkf = edge_k[0];
+				cv::Point& pkm = edge_k[sz_ek/2];
+				cv::Point& pkl = edge_k[sz_ek - 1];
 
 #ifndef DISCARD_CONSTRAINT_POSITION
 				//CONSTRAINTS on position
@@ -1709,7 +1703,7 @@ void CNEllipseDetector::Triplets413(VVP& pi,
 				}
 #endif
 				// Find ellipse parameters
-				Point2f center = GetCenterCoordinates(data_ij, data_ik);
+				cv::Point2f center = GetCenterCoordinates(data_ij, data_ik);
 
 				FindEllipses(center, edge_i, edge_j, edge_k, data_ij, data_ik, ellipses);
 
@@ -1719,7 +1713,7 @@ void CNEllipseDetector::Triplets413(VVP& pi,
 };
 
 
-void CNEllipseDetector::RemoveShortEdges(Mat1b& edges, Mat1b& clean)
+void CNEllipseDetector::RemoveShortEdges(cv::Mat1b& edges, cv::Mat1b& clean)
 {
 	VVP contours;
 
@@ -1733,7 +1727,7 @@ void CNEllipseDetector::RemoveShortEdges(Mat1b& edges, Mat1b& clean)
 		unsigned szEdge = edge.size();
 
 		// Constraint on axes aspect ratio
-		RotatedRect oriented = minAreaRect(edge);
+		cv::RotatedRect oriented = minAreaRect(edge);
 		if (oriented.size.width < _fMinOrientedRectSide ||
 			oriented.size.height < _fMinOrientedRectSide ||
 			oriented.size.width > oriented.size.height * _fMaxRectAxesRatio ||
@@ -1751,10 +1745,7 @@ void CNEllipseDetector::RemoveShortEdges(Mat1b& edges, Mat1b& clean)
 
 
 
-void CNEllipseDetector::PrePeocessing(Mat1b& I,
-										 Mat1b& DP,
-										 Mat1b& DN
-										 )
+void CNEllipseDetector::PreProcessing(cv::Mat1b& I, cv::Mat1b& DP, cv::Mat1b& DN)
 {
 
 	Tic(0); //edge detection
@@ -1764,11 +1755,11 @@ void CNEllipseDetector::PrePeocessing(Mat1b& I,
 	GaussianBlur(I, I, _szPreProcessingGaussKernelSize, _dPreProcessingGaussSigma);
 
 	// Temp variables
-	Mat1b E;				//edge mask
-	Mat1s DX, DY;			//sobel derivatives
+	cv::Mat1b E;				//edge mask
+	cv::Mat1s DX, DY;			//sobel derivatives
 
 	// Detect edges
-	Canny3(I, E, DX, DY, 3, false);
+	Canny_v3(I, E, DX, DY, 3, false);
 
 	Toc(0); //edge detection
 
@@ -1800,20 +1791,20 @@ void CNEllipseDetector::PrePeocessing(Mat1b& I,
 };
 
 
-void CNEllipseDetector::DetectAfterPreProcessing(vector<Ellipse>& ellipses, Mat1b& E, Mat1f& PHI)
+void CNEllipseDetector::DetectAfterPreProcessing(vector<Ellipse>& ellipses, const cv::Mat1b& E, const cv::Mat1f& PHI)
 {
 	// Set the image size
 	_szImg = E.size();
 
 	// Initialize temporary data structures
-	Mat1b DP = Mat1b::zeros(_szImg);		// arcs along positive diagonal
-	Mat1b DN = Mat1b::zeros(_szImg);		// arcs along negative diagonal
+	cv::Mat1b DP = cv::Mat1b::zeros(_szImg);		// arcs along positive diagonal
+	cv::Mat1b DN = cv::Mat1b::zeros(_szImg);		// arcs along negative diagonal
 
 	// For each edge points, compute the edge direction
-	for (int i = 0; i<_szImg.height; ++i)
+	for (int i = 0; i < _szImg.height; ++i)
 	{
-		float* _phi = PHI.ptr<float>(i);
-		uchar* _e = E.ptr<uchar>(i);
+		const float* _phi = PHI.ptr<float>(i);
+		const uchar* _e = E.ptr<uchar>(i);
 		uchar* _dp = DP.ptr<uchar>(i);
 		uchar* _dn = DN.ptr<uchar>(i);
 
@@ -1867,7 +1858,7 @@ void CNEllipseDetector::DetectAfterPreProcessing(vector<Ellipse>& ellipses, Mat1
 };
 
 
-void CNEllipseDetector::Detect(Mat1b& I, vector<Ellipse>& ellipses)
+void CNEllipseDetector::Detect(cv::Mat1b& I, vector<Ellipse>& ellipses)
 {
 	countsOfFindEllipse=0;
 	countsOfGetFastCenter=0;
@@ -1877,8 +1868,8 @@ void CNEllipseDetector::Detect(Mat1b& I, vector<Ellipse>& ellipses)
 	_szImg = I.size();
 
 	// Initialize temporary data structures
-	Mat1b DP = Mat1b::zeros(_szImg);		// arcs along positive diagonal
-	Mat1b DN = Mat1b::zeros(_szImg);		// arcs along negative diagonal
+	cv::Mat1b DP = cv::Mat1b::zeros(_szImg);		// arcs along positive diagonal
+	cv::Mat1b DN = cv::Mat1b::zeros(_szImg);		// arcs along negative diagonal
 
 	// Initialize accumulator dimensions
 	ACC_N_SIZE = 101;
@@ -1898,7 +1889,7 @@ void CNEllipseDetector::Detect(Mat1b& I, vector<Ellipse>& ellipses)
 
 	// Preprocessing
 	// From input image I, find edge point with coarse convexity along positive (DP) or negative (DN) diagonal
-	PrePeocessing(I, DP, DN);
+	PreProcessing(I, DP, DN);
 
 	Tac(1); //preprocessing
 	// Detect edges and find convexities
@@ -2063,7 +2054,7 @@ void CNEllipseDetector::ClusterEllipses(vector<Ellipse>& ellipses)
 
 
 //Draw at most iTopN detected ellipses.
-void CNEllipseDetector::DrawDetectedEllipses(Mat3b& output, vector<Ellipse>& ellipses, int iTopN, int thickness)
+void CNEllipseDetector::DrawDetectedEllipses(cv::Mat3b& output, vector<Ellipse>& ellipses, int iTopN, int thickness)
 {
 	int sz_ell = int(ellipses.size());
 	int n = (iTopN == 0) ? sz_ell : min(iTopN, sz_ell);
@@ -2071,31 +2062,31 @@ void CNEllipseDetector::DrawDetectedEllipses(Mat3b& output, vector<Ellipse>& ell
 	{
 		Ellipse& e = ellipses[n - i - 1];
 		int g = cvRound(e._score * 255.f);
-		Scalar color(0, g, 0);
-		ellipse(output, Point(cvRound(e._xc), cvRound(e._yc)), Size(cvRound(e._a), cvRound(e._b)), e._rad*180.0 / CV_PI, 0.0, 360.0, color, thickness);
+		cv::Scalar color(0, g, 0);
+		cv::ellipse(output, cv::Point(cvRound(e._xc), cvRound(e._yc)), cv::Size(cvRound(e._a), cvRound(e._b)), e._rad*180.0 / CV_PI, 0.0, 360.0, color, thickness);
 	}
 }
 
 // add 2015��12��24��
-void CNEllipseDetector:: showEdgeInPic(Mat1b& I){
+void CNEllipseDetector:: showEdgeInPic(cv::Mat1b& I){
 	_szImg = I.size();
 	// initialize temporary data structures
-	Mat1b DP	= Mat1b::zeros(_szImg);		// arcs along positive diagonal
-	Mat1b DN	= Mat1b::zeros(_szImg);		// arcs along negative diagonal
+	cv::Mat1b DP	= cv::Mat1b::zeros(_szImg);		// arcs along positive diagonal
+	cv::Mat1b DN	= cv::Mat1b::zeros(_szImg);		// arcs along negative diagonal
 
 	//other temporary 
-	vector<vector<Point>> points_1, points_2, points_3, points_4;		//vector of points, one for each convexity class
+	vector<vector<cv::Point>> points_1, points_2, points_3, points_4;		//vector of points, one for each convexity class
 
 	//Preprocessing
 	//From input image I, find edge point with coarse convexity along positive (DP) or negative (DN) diagonal
 
 
-	PrePeocessing(I, DP, DN);
+	PreProcessing(I, DP, DN);
 
 	// show DP
-	Mat1b DTMP	= Mat1b::ones(_szImg)*255;	
-	Mat1b tmp=DTMP-DP;
-	Mat1b tmp2=DTMP-DP;
+	cv::Mat1b DTMP	= cv::Mat1b::ones(_szImg)*255;	
+	cv::Mat1b tmp=DTMP-DP;
+	cv::Mat1b tmp2=DTMP-DP;
 	/*cvShowImage("DP",&(IplImage)tmp );
 	cvSaveImage("DP.jpg",&IplImage(tmp));
 	tmp=DTMP-DN;
@@ -2103,9 +2094,7 @@ void CNEllipseDetector:: showEdgeInPic(Mat1b& I){
 	cvSaveImage("DN.jpg",&IplImage(tmp));*/
 	tmp = DP+DN;
 	tmp2 = DTMP-tmp;
-	IplImage ipl_tmp2 = cvIplImage(tmp2);
-	cvShowImage("DNP",&ipl_tmp2);
-	IplImage ipl_tmp2_save = cvIplImage(tmp2);
+	cv::imshow("DNP", tmp2);
 	cv::imwrite("DPN.jpg",tmp2);
 	//end show DpDn
 	float t_fMinOrientedRectSide = _fMinOrientedRectSide;
@@ -2115,8 +2104,7 @@ void CNEllipseDetector:: showEdgeInPic(Mat1b& I){
 	DetectEdges24(DN, points_2, points_4);
 	_fMinOrientedRectSide=t_fMinOrientedRectSide;
 	//��ʾѡ���ı�
-	Mat picture(_szImg, CV_8UC3,Scalar(255,255,255));
-	IplImage *image= cvCreateImage(cvSize(_szImg.width, _szImg.height), IPL_DEPTH_8U,3);
+	cv::Mat picture(_szImg, CV_8UC3,cv::Scalar(255,255,255));
 	// Mat picture(_szImg,CV_8UC3);
 	/*for(int ih=0;ih<_szImg.height;ih++){
 	for(int iw=0;iw<_szImg.width;iw++){
@@ -2126,11 +2114,11 @@ void CNEllipseDetector:: showEdgeInPic(Mat1b& I){
 
 	}
 	}*/
-	vector<Mat> imgs(4);
-	Mat picture1=picture.clone();
-	Mat picture2=picture.clone();
-	Mat picture3=picture.clone();
-	Mat picture4=picture.clone();
+	vector<cv::Mat> imgs(4);
+	cv::Mat picture1=picture.clone();
+	cv::Mat picture2=picture.clone();
+	cv::Mat picture3=picture.clone();
+	cv::Mat picture4=picture.clone();
 	showEdge(points_1,picture1);
 	showEdge(points_2,picture2);
 	showEdge(points_3,picture3);
@@ -2141,7 +2129,7 @@ void CNEllipseDetector:: showEdgeInPic(Mat1b& I){
 	imshow("��3����", picture3);
 	imshow("��4����", picture4);*/
 	
-	Mat picture5=picture.clone();
+	cv::Mat picture5=picture.clone();
 	showEdge(points_1,picture5);
 	showEdge(points_2,picture5);
 	showEdge(points_3,picture5);
@@ -2152,26 +2140,24 @@ void CNEllipseDetector:: showEdgeInPic(Mat1b& I){
 	imgs[2] = picture3;
 	imgs[3] = picture4; 
 	
-	cvNamedWindow("all arcs", CV_WINDOW_NORMAL);
-	IplImage ipl_picture5 = cvIplImage(picture5);
-	cvShowImage("all arcs",&ipl_picture5);
-	IplImage ipl_picture5_save = cvIplImage(picture5);
+	cv::namedWindow("all arcs", cv::WINDOW_NORMAL);
+	cv::imshow("all arcs", picture5);
 	cv::imwrite("arcs.jpg", picture5);
 
 	//imshow("all arcs", picture5);
 
-	MultiImage_OneWin("�����еĻ�", imgs, cvSize(2, 2), cvSize(400,800)); 
+	MultiImage_OneWin("All arcs", imgs, cv::Size(2, 2), cv::Size(400,800));
 	//cvWaitKey(0);  
 	//cvDestroyWindow("all arcs");
 }
-void CNEllipseDetector:: showAllEdgeInPic(Mat1b& I){
+void CNEllipseDetector:: showAllEdgeInPic(cv::Mat1b& I){
 	_szImg = I.size();
 	// initialize temporary data structures
-	Mat1b DP	= Mat1b::zeros(_szImg);		// arcs along positive diagonal
-	Mat1b DN	= Mat1b::zeros(_szImg);		// arcs along negative diagonal
+	cv::Mat1b DP	= cv::Mat1b::zeros(_szImg);		// arcs along positive diagonal
+	cv::Mat1b DN	= cv::Mat1b::zeros(_szImg);		// arcs along negative diagonal
 
 	//other temporary 
-	vector<vector<Point>> points_1, points_2, points_3, points_4;		//vector of points, one for each convexity class
+	vector<vector<cv::Point>> points_1, points_2, points_3, points_4;		//vector of points, one for each convexity class
 
 	//Preprocessing
 	//From input image I, find edge point with coarse convexity along positive (DP) or negative (DN) diagonal
@@ -2180,31 +2166,29 @@ void CNEllipseDetector:: showAllEdgeInPic(Mat1b& I){
 	//this->_iMinEdgeLength=0;
 	//this->_uNs=0;
 
-	PrePeocessing(I, DP, DN);
-	cvNamedWindow("aaas", CV_WINDOW_NORMAL);
-	Mat1b tmp	= Mat1b::zeros(_szImg);
-	
-	IplImage ipl_DP = cvIplImage(DP);
-	cvShowImage("aaas",&ipl_DP);
+	PreProcessing(I, DP, DN);
+	cv::namedWindow("aaas", cv::WINDOW_NORMAL);
+	cv::Mat1b tmp	= cv::Mat1b::zeros(_szImg);
+	cv::imshow("aaas", DP);
 	//detect edges and find convexities// 4������
 	//DetectEdges13(DP, points_1, points_3);
 	//DetectEdges24(DN, points_2, points_4);
 }
 
-int CNEllipseDetector:: showEdgeInPic(Mat1b& I,bool showedge){
+int CNEllipseDetector:: showEdgeInPic(cv::Mat1b& I,bool showedge){
 	_szImg = I.size();
 	// initialize temporary data structures
-	Mat1b DP	= Mat1b::zeros(_szImg);		// arcs along positive diagonal
-	Mat1b DN	= Mat1b::zeros(_szImg);		// arcs along negative diagonal
+	cv::Mat1b DP	= cv::Mat1b::zeros(_szImg);		// arcs along positive diagonal
+	cv::Mat1b DN	= cv::Mat1b::zeros(_szImg);		// arcs along negative diagonal
 
 	//other temporary 
-	vector<vector<Point>> points_1, points_2, points_3, points_4;		//vector of points, one for each convexity class
+	vector<vector<cv::Point>> points_1, points_2, points_3, points_4;		//vector of points, one for each convexity class
 
 	//Preprocessing
 	//From input image I, find edge point with coarse convexity along positive (DP) or negative (DN) diagonal
 
 
-	PrePeocessing(I, DP, DN);
+	PreProcessing(I, DP, DN);
 	//detect edges and find convexities// 4������
 	DetectEdges13(DP, points_1, points_3);
 	DetectEdges24(DN, points_2, points_4);

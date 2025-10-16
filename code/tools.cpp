@@ -1,163 +1,152 @@
-/*
-This code is intended for academic use only.
-You are free to use and modify the code, at your own risk.
-
-If you use this code, or find it useful, please refer to the paper:
-
-
-The comments in the code refer to the abovementioned paper.
-If you need further details about the code or the algorithm, please contact me at:
-
-lianbosong@foxmail.com
-
-last update: 
-*/
+// 幾何計算、画像表示、ファイル操作、楕円検出の評価等
 
 #include "tools.h"
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <math.h>
+#include <time.h>
+#include <dirent.h>
 
-Point2f lineCrossPoint(Point2f l1p1,Point2f l1p2,Point2f l2p1,Point2f l2p2 )
+// 2つの直線の交点を計算（cv::Point2f：float型のx,y座標を持つ2次元点）
+cv::Point2f lineCrossPoint(cv::Point2f l1p1, cv::Point2f l1p2, cv::Point2f l2p1, cv::Point2f l2p2 )
 {
-	Point2f crossPoint;
-	float k1,k2,b1,b2;
-	if (l1p1.x==l1p2.x&&l2p1.x==l2p2.x){
-		crossPoint=Point2f(0,0);//��Ч��
+	cv::Point2f crossPoint;
+	float k1, k2, b1, b2; // k：傾き、b：y切片
+
+	// 0割り防止で直線が垂直な場合を先に処理
+	if (l1p1.x == l1p2.x && l2p1.x == l2p2.x)
+	{
+		crossPoint = cv::Point2f(0, 0);
 		return crossPoint;
 	}
-	if (l1p1.x==l1p2.x)
+	if (l1p1.x == l1p2.x)
 	{
-		crossPoint.x=l1p1.x;
-		k2=(l2p2.y-l2p1.y)/(l2p2.x-l2p1.x);
-		b2=l2p1.y-k2*l2p1.x;
-		crossPoint.y=k2*crossPoint.x+b2;
+		crossPoint.x = l1p1.x;
+		k2 = (l2p2.y - l2p1.y) / (l2p2.x - l2p1.x);
+		b2 = l2p1.y - k2 * l2p1.x;
+		crossPoint.y = k2 * crossPoint.x + b2;
 		return crossPoint;
 	}
-	if (l2p1.x==l2p2.x)
+	if (l2p1.x == l2p2.x)
 	{
-		crossPoint.x=l2p1.x;
-		k2=(l1p2.y-l1p1.y)/(l1p2.x-l1p1.x);
-		b2=l1p1.y-k2*l1p1.x;
-		crossPoint.y=k2*crossPoint.x+b2;
+		crossPoint.x = l2p1.x;
+		k2 = (l1p2.y - l1p1.y) / (l1p2.x - l1p1.x);
+		b2 = l1p1.y - k2 * l1p1.x;
+		crossPoint.y = k2 * crossPoint.x + b2;
 		return crossPoint;
 	}
 
-	k1=(l1p2.y-l1p1.y)/(l1p2.x-l1p1.x);
-	k2=(l2p2.y-l2p1.y)/(l2p2.x-l2p1.x);
-	b1=l1p1.y-k1*l1p1.x;
-	b2=l2p1.y-k2*l2p1.x;
-	if (k1==k2)
+	k1 = (l1p2.y - l1p1.y) / (l1p2.x - l1p1.x);
+	k2 = (l2p2.y - l2p1.y) / (l2p2.x - l2p1.x);
+	b1 = l1p1.y - k1 * l1p1.x;
+	b2 = l2p1.y - k2 * l2p1.x;
+	if (k1 == k2)
 	{
-		crossPoint=Point2f(0,0);//��Ч��
+		crossPoint = cv::Point2f(0, 0);
 	}
 	else
 	{
-		crossPoint.x=(b2-b1)/(k1-k2);
-		crossPoint.y=k1*crossPoint.x+b1;
+		crossPoint.x = (b2 - b1) / (k1 - k2);
+		crossPoint.y = k1 * crossPoint.x + b1;
 	}
 	return crossPoint;
 }
 
-void point2Mat(Point2f p1,Point2f p2,float mat[2][2])
+// 2つの2次元点を行列に変換（自作関数、OpenCVには無い）
+void point2Mat(cv::Point2f p1, cv::Point2f p2, float mat[2][2])
 {
-	mat[0][0]=p1.x;
-	mat[0][1]=p1.y;
-	mat[1][0]=p2.x;
-	mat[1][1]=p2.y;
+	mat[0][0] = p1.x;
+	mat[0][1] = p1.y;
+	mat[1][0] = p2.x;
+	mat[1][1] = p2.y;
 }
-float value4SixPoints( V2SP )
+
+// 6点から不変量を計算（論文に記載されていない、Main.cppでも呼び出されていないし、もしかしたら使われていない？）
+float value4SixPoints( V2SP ) // V2SPはヘッダファイルで定義されている
 {
-	float result=1;
-	Mat A,B,C;
-	float matB[2][2],matC[2][2];
-	Point2f v,w,u;
-	v=lineCrossPoint(p1,p2,p3,p4);
-	w=lineCrossPoint(p5,p6,p3,p4);
-	u=lineCrossPoint(p5,p6,p1,p2);
+	float result = 1;
+	cv::Mat A, B, C;
+	float matB[2][2], matC[2][2];
+	cv::Point2f v, w, u;
+	v = lineCrossPoint(p1, p2, p3, p4);
+	w = lineCrossPoint(p5, p6, p3, p4);
+	u = lineCrossPoint(p5, p6, p1, p2);
 
-	point2Mat(u,v,matB);
-	point2Mat(p1,p2,matC);
-	B=Mat(2,2,CV_32F,matB);
-	C=Mat(2,2,CV_32F,matC);
-	A=C*B.inv();
-	/*cout<<"u:\t"<<u<<endl;
-	cout<<"v:\t"<<v<<endl;
-	cout<<"B:\t"<<B<<endl;
-	cout<<A<<endl;*/
-	result*=A.at<float>(0,0)*A.at<float>(1,0)/(A.at<float>(0,1)*A.at<float>(1,1));
+	point2Mat(u, v, matB);
+	point2Mat(p1, p2, matC);
+	B = cv::Mat(2, 2, CV_32F, matB);
+	C = cv::Mat(2, 2, CV_32F, matC);
+	A = C * B.inv();
 
-	point2Mat(p3,p4,matC);
-	point2Mat(v,w,matB);
-	B=Mat(2,2,CV_32F,matB);
-	C=Mat(2,2,CV_32F,matC);
-	A=C*B.inv();
-	result*=A.at<float>(0,0)*A.at<float>(1,0)/(A.at<float>(0,1)*A.at<float>(1,1));
+	result *= A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
 
-	point2Mat(p5,p6,matC);
-	point2Mat(w,u,matB);
-	B=Mat(2,2,CV_32F,matB);
-	C=Mat(2,2,CV_32F,matC);
-	A=C*B.inv();
-	result*=A.at<float>(0,0)*A.at<float>(1,0)/(A.at<float>(0,1)*A.at<float>(1,1));
+	point2Mat(p3, p4, matC);
+	point2Mat(v, w, matB);
+	B = cv::Mat(2, 2, CV_32F, matB);
+	C = cv::Mat(2, 2, CV_32F, matC);
+	A = C * B.inv();
+	result *= A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
+
+	point2Mat(p5, p6, matC);
+	point2Mat(w, u, matB);
+	B = cv::Mat(2, 2, CV_32F, matB);
+	C = cv::Mat(2, 2, CV_32F, matC);
+	A = C * B.inv();
+	result *= A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
 	return result;
 }
 
-void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& SrcImg_V, CvSize SubPlot, CvSize ImgMax_Size)  
+// 複数の画像を一つの画面に表示
+void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<cv::Mat>& SrcImg_V, cv::Size SubPlot, cv::Size ImgMax_Size)  
 {  
-	//Reference : http://blog.csdn.net/yangyangyang20092010/article/details/21740373  
-
-	//************* Usage *************//  
-	//vector<Mat> imgs(4);  
-	//imgs[0] = imread("F:\\SA2014.jpg");  
-	//imgs[1] = imread("F:\\SA2014.jpg");  
-	//imgs[2] = imread("F:\\SA2014.jpg");  
-	//imgs[3] = imread("F:\\SA2014.jpg");  
-	//MultiImage_OneWin("T", imgs, cvSize(2, 2), cvSize(400, 280));  
-
-	//Window's image  
-	Mat Disp_Img;  
-	//Width of source image  
-	CvSize Img_OrigSize = cvSize(SrcImg_V[0].cols, SrcImg_V[0].rows);  
-	//******************** Set the width for displayed image ********************//  
-	//Width vs height ratio of source image  
-	float WH_Ratio_Orig = Img_OrigSize.width/(float)Img_OrigSize.height;  
-	CvSize ImgDisp_Size = cvSize(100, 100);  
+	cv::Mat Disp_Img; // 出力画像を定義
+	cv::Size Img_OrigSize = cv::Size(SrcImg_V[0].cols, SrcImg_V[0].rows); // 元画像のサイズを取得
+	float WH_Ratio_Orig = Img_OrigSize.width/(float)Img_OrigSize.height; // 元画像の横縦比を計算
+	cv::Size ImgDisp_Size = cv::Size(100, 100); // 出力画像のサイズを定義
 	if(Img_OrigSize.width > ImgMax_Size.width)  
-		ImgDisp_Size = cvSize(ImgMax_Size.width, (int)(ImgMax_Size.width/WH_Ratio_Orig));  
+		ImgDisp_Size = cv::Size(ImgMax_Size.width, (int)(ImgMax_Size.width/WH_Ratio_Orig));  
 	else if(Img_OrigSize.height > ImgMax_Size.height)  
-		ImgDisp_Size = cvSize((int)(ImgMax_Size.height*WH_Ratio_Orig), ImgMax_Size.height);  
+		ImgDisp_Size = cv::Size((int)(ImgMax_Size.height*WH_Ratio_Orig), ImgMax_Size.height);  
 	else  
-		ImgDisp_Size = cvSize(Img_OrigSize.width, Img_OrigSize.height);  
-	//******************** Check Image numbers with Subplot layout ********************//  
+		ImgDisp_Size = cv::Size(Img_OrigSize.width, Img_OrigSize.height);
+
+	// 表示枚数の確認
 	int Img_Num = (int)SrcImg_V.size();  
-	if(Img_Num > SubPlot.width * SubPlot.height)  
+	if(Img_Num > SubPlot.width * SubPlot.height)
 	{  
 		cout<<"Your SubPlot Setting is too small !"<<endl;  
 		exit(0);  
-	}  
-	//******************** Blank setting ********************//  
-	CvSize DispBlank_Edge = cvSize(80, 60);  
-	CvSize DispBlank_Gap  = cvSize(15, 15);  
-	//******************** Size for Window ********************//  
-	Disp_Img.create(Size(ImgDisp_Size.width*SubPlot.width + DispBlank_Edge.width + (SubPlot.width - 1)*DispBlank_Gap.width,   
-		ImgDisp_Size.height*SubPlot.height + DispBlank_Edge.height + (SubPlot.height - 1)*DispBlank_Gap.height), CV_8UC3);  
-	Disp_Img.setTo(0);//Background  
-	//Left top position for each image  
-	int EdgeBlank_X = (Disp_Img.cols - (ImgDisp_Size.width*SubPlot.width + (SubPlot.width - 1)*DispBlank_Gap.width))/2;  
-	int EdgeBlank_Y = (Disp_Img.rows - (ImgDisp_Size.height*SubPlot.height + (SubPlot.height - 1)*DispBlank_Gap.height))/2;  
-	CvPoint LT_BasePos = cvPoint(EdgeBlank_X, EdgeBlank_Y);  
-	CvPoint LT_Pos = LT_BasePos;  
+	}
 
-	//Display all images  
+	// 余白設定
+	cv::Size DispBlank_Edge = cv::Size(80, 60);
+	cv::Size DispBlank_Gap  = cv::Size(15, 15);
+
+	// Create the display image
+	Disp_Img.create(cv::Size(ImgDisp_Size.width * SubPlot.width + DispBlank_Edge.width + (SubPlot.width - 1) * DispBlank_Gap.width,
+		ImgDisp_Size.height * SubPlot.height + DispBlank_Edge.height + (SubPlot.height - 1) * DispBlank_Gap.height), CV_8UC3);
+	Disp_Img.setTo(0);
+	
+	int EdgeBlank_X = (Disp_Img.cols - (ImgDisp_Size.width * SubPlot.width + (SubPlot.width - 1) * DispBlank_Gap.width)) / 2;
+	int EdgeBlank_Y = (Disp_Img.rows - (ImgDisp_Size.height * SubPlot.height + (SubPlot.height - 1) * DispBlank_Gap.height)) / 2;
+	cv::Point LT_BasePos = cv::Point(EdgeBlank_X, EdgeBlank_Y);  
+	cv::Point LT_Pos = LT_BasePos;  
+
+	// Display all images
 	for (int i=0; i < Img_Num; i++)  
 	{  
-		//Obtain the left top position  
+		// Obtain the left top position  
 		if ((i%SubPlot.width == 0) && (LT_Pos.x != LT_BasePos.x))  
 		{  
 			LT_Pos.x = LT_BasePos.x;  
 			LT_Pos.y += (DispBlank_Gap.height + ImgDisp_Size.height);  
 		}  
-		//Writting each to Window's Image  
-		Mat imgROI = Disp_Img(Rect(LT_Pos.x, LT_Pos.y, ImgDisp_Size.width, ImgDisp_Size.height));  
-		resize(SrcImg_V[i], imgROI, Size(ImgDisp_Size.width, ImgDisp_Size.height));  
+		// Writing each to Window's Image  
+		cv::Mat imgROI = Disp_Img(cv::Rect(LT_Pos.x, LT_Pos.y, ImgDisp_Size.width, ImgDisp_Size.height));  
+		cv::resize(SrcImg_V[i], imgROI, cv::Size(ImgDisp_Size.width, ImgDisp_Size.height));  
 
 		LT_Pos.x += (DispBlank_Gap.width + ImgDisp_Size.width);  
 	}  
@@ -166,230 +155,231 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 	int Scree_W = 1366;//GetSystemMetrics(SM_CXSCREEN);  
 	int Scree_H = 768;//GetSystemMetrics(SM_CYSCREEN);  
 	//cout<<Scree_W<<"\t"<<Scree_H<<endl;
-	cvNamedWindow(MultiShow_WinName.c_str(), CV_WINDOW_NORMAL);
-	cvMoveWindow(MultiShow_WinName.c_str(),(Scree_W - Disp_Img.cols)/2 ,(Scree_H - Disp_Img.rows)/2);//Centralize the window  
+	cv::namedWindow(MultiShow_WinName.c_str(), cv::WINDOW_NORMAL);
+	cv::moveWindow(MultiShow_WinName.c_str(), (Scree_W - Disp_Img.cols) / 2, (Scree_H - Disp_Img.rows) / 2);//Centralize the window
 	cv::imshow(MultiShow_WinName, Disp_Img);
 	cv::waitKey(0);
 	cv::destroyWindow(MultiShow_WinName); 
 }  
 
-
+// 画像のリサイズ（実際は拡大）
 void PyrDown(string picName)
 {
-	Mat img1=imread(picName);
-	Mat img2;
-	Size sz;
-	//���������»������ϲ������� ���������ı�ͼ�񳤿�����
-	//pyrDown(img1,img2,sz,BORDER_DEFAULT);
-	pyrUp(img1,img2,sz,BORDER_DEFAULT);
-	pyrUp(img2,img2,sz,BORDER_DEFAULT);
-	namedWindow("WindowOrg");
-	namedWindow("WindowNew");
-	imshow("WindowOrg",img1);
-	imshow("WindowNew",img2);
+	cv::Mat img1 = cv::imread(picName);
+	cv::Mat img2;
+	cv::Size sz;
 
-	waitKey(10000);
+	pyrUp(img1, img2, sz, cv::BORDER_DEFAULT);
+	pyrUp(img2, img2, sz, cv::BORDER_DEFAULT);
+	cv::namedWindow("WindowOrg");
+	cv::namedWindow("WindowNew");
+	cv::imshow("WindowOrg", img1);
+	cv::imshow("WindowNew", img2);
+
+	cv::waitKey(10000);
 }
-Mat matResize(Mat src,double scale){
-	Mat img2;
-	bool showtimeandpic=false;
-	if(!showtimeandpic){
-		Size dsize = Size(int(src.cols*scale),int(src.rows*scale));
-		img2 = Mat(dsize,CV_32S);
-		resize(src, img2,dsize,CV_INTER_CUBIC);
+
+// 画像のリサイズ（scaleで倍率指定）
+cv::Mat matResize(cv::Mat src,double scale)
+{
+	cv::Mat img2;
+	bool showtimeandpic = false;
+	if(!showtimeandpic)
+	{
+		cv::Size dsize = cv::Size(int(src.cols * scale), int(src.rows * scale));
+		img2 = cv::Mat(dsize, CV_32S);
+		cv::resize(src, img2, dsize, cv::INTER_CUBIC);
 	}
-	else{
+	else
+	{
 		clock_t start_time=clock();
 		{
-			Size dsize = Size(int(src.cols*scale),int(src.rows*scale));
-			img2 = Mat(dsize,CV_32S);
-			resize(src, img2,dsize,CV_INTER_CUBIC);
+			cv::Size dsize = cv::Size(int(src.cols * scale), int(src.rows * scale));
+			img2 = cv::Mat(dsize, CV_32S);
+			cv::resize(src, img2, dsize, cv::INTER_CUBIC);
 		}
 		clock_t end_time=clock();
-		cout<< "Running time is: "<<static_cast<double>(end_time-start_time)/CLOCKS_PER_SEC*1000<<"ms"<<endl;//�������ʱ��
+		cout << "Running time is: " << static_cast<double>(end_time-start_time) / CLOCKS_PER_SEC * 1000 << "ms" << endl;
 
-		//CV_INTER_NN - ����ڲ�ֵ,
-		//CV_INTER_LINEAR -  ˫���Բ�ֵ (ȱʡʹ��) 
-		//CV_INTER_AREA -  ʹ�����ع�ϵ�ز�������ͼ����Сʱ�򣬸÷���
-		//���Ա��Ⲩ�Ƴ��֡���ͼ��Ŵ�ʱ��������  CV_INTER_NN  ����.. 
-		//CV_INTER_CUBIC -  ������ֵ. 
-		namedWindow("WindowOrg",CV_WINDOW_AUTOSIZE);
-		namedWindow("WindowNew",CV_WINDOW_AUTOSIZE);
-		imshow("WindowOrg",src);
-		imshow("WindowNew",img2);
+		cv::namedWindow("WindowOrg", cv::WINDOW_AUTOSIZE);
+		cv::namedWindow("WindowNew", cv::WINDOW_AUTOSIZE);
+		cv::imshow("WindowOrg", src);
+		cv::imshow("WindowNew", img2);
 
-		waitKey(1000);
+		cv::waitKey(1000);
 	}
 	return img2;
 }
 
-//����ѡ���Ļ���
-void showEdge(vector<vector<Point>> points_,Mat& picture)
+// エッジ描画
+void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture)
 {
 	srand( (unsigned)time( NULL ));
-	int radius=1;
-	Point center;
-	
-	int sEdge=points_.size();
-	Point prev_point;
-	Point current_point;
-	for (int iEdge=0;iEdge<sEdge;iEdge++){
-		int r=rand()%256;
-		int g=rand()%256;
-		int b=rand()%256;
-		Scalar color=Scalar(b,g,r);
-		vector<Point> Edge=points_.at(iEdge);
-		int sPoints=Edge.size();
-		for(int iPoint=0;iPoint<sPoints-1;iPoint++){
-			center=Edge.at(iPoint);
-			//����Ϊ�����ص�ͼ��Բ�ġ��뾶����ɫ����ϸ������  
-			//circle(picture,center,radius,color); 
-			prev_point=Edge.at(iPoint);
-			current_point=Edge.at(iPoint+1);
-			//Mat to IplImage to cvArr
+	int radius = 1;
+	cv::Point center;
+
+	int sEdge = points_.size();
+	cv::Point prev_point;
+	cv::Point current_point;
+	for (int iEdge = 0; iEdge < sEdge; iEdge++)
+	{
+		int r = rand() % 256;
+		int g = rand() % 256;
+		int b = rand() % 256;
+		cv::Scalar color = cv::Scalar(b, g, r);
+		vector<cv::Point> Edge = points_.at(iEdge);
+		int sPoints = Edge.size();
+		for (int iPoint = 0; iPoint < sPoints - 1; iPoint++)
+		{
+			center = Edge.at(iPoint);
+			prev_point = Edge.at(iPoint);
+			current_point = Edge.at(iPoint + 1);
 			cv::line(picture, prev_point, current_point, color, 1, cv::LINE_AA);
 		}
 	}
 }
+
 // file operation
-int writeFile(string fileName_cpp,vector<string> vsContent){
-	string line="";
+int writeFile(string fileName_cpp, vector<string> vsContent)
+{
+	string line = "";
 	vector<string> data;
 	vector<string> data_split;
 	ofstream out(fileName_cpp);
-	if(!out)
+	if (!out)
 	{
-		cout<<"��д�ļ�ʧ��"<<endl;
+		cout << "Failed to open file for writing" << endl;
 		return -1;
 	}
-	for(vector<string>::iterator i=vsContent.begin();i<vsContent.end();i++){
-		out<<*i<<endl;
+	for (vector<string>::iterator i = vsContent.begin(); i < vsContent.end(); i++)
+	{
+		out << *i << endl;
 	}
 	out.close();
 	return 1;
 }
 
-int readFile(string fileName_cpp){
-	string line="";
+int readFile(string fileName_cpp)
+{
+	string line = "";
 	vector<string> data;
 	ifstream in(fileName_cpp);
-	if(!in)
+	if (!in)
 	{
-		cout<<"��д�ļ�ʧ��"<<endl;
+		cout << "Failed to open file for reading" << endl;
 		return -1;
 	}
-	while(getline(in,line))
+	while (getline(in, line))
 	{
-		data.push_back(line);     //��ȡ�ļ�ÿһ�����ݣ����ŵ�������������
+		data.push_back(line);
 	}
 	in.close();
-	/******����data���������******/
-	for(unsigned int i=0;i<data.size();i++)
+	for (unsigned int i = 0; i < data.size(); i++)
 	{
-		cout<<data.at(i)<<endl;
+		cout << data.at(i) << endl;
 	}
 	return 0;
-	/******����data���������******/
 }
-int readFileByChar(string fileName_split){
 
-	string line="";
+int readFileByChar(string fileName_split)
+{
+	string line = "";
 	vector<string> data;
 	vector<string> data_split;
 	ifstream in_split(fileName_split);
-	if(!in_split)
+	if (!in_split)
 	{
-		cout<<"��д�ļ�ʧ��"<<endl;
+		cout << "Failed to open file for reading" << endl;
 		return -1;
 	}
-	while(getline(in_split,line))
+	while (getline(in_split, line))
 	{
-		data_split.push_back(line);     //��ȡ�ļ�ÿһ�����ݣ����ŵ�������������
+		data_split.push_back(line);
 	}
 	in_split.close();
-	/******���ļ�******/
-	/******��ȡsplit.txt�ļ����������******/
 
-	/******����data_split���������(���ݷ���)******/
-	for(unsigned int i=0;i<data_split.size();i++)
+	for (unsigned int i = 0; i < data_split.size(); i++)
 	{
-		cout<<"--------------------"<<endl;
-		for(unsigned int j=0;j<getStr(data_split.at(i)).size();j++)
+		cout << "--------------------" << endl;
+		for (unsigned int j = 0; j < getStr(data_split.at(i)).size(); j++)
 		{
-			cout<<getStr(data_split.at(i)).at(j)<<endl;
+			cout << getStr(data_split.at(i)).at(j) << endl;
 		}
 	}
-	/******����data_split���������(���ݷ���)******/
 	return 0;
 }
+
 void Trim(string &str)
 {
-	int s=str.find_first_not_of(" \t\n");
-	int e=str.find_last_not_of(" \t\n");
-	str=str.substr(s,e-s+1);
+	int s = str.find_first_not_of(" \t\n");
+	int e = str.find_last_not_of(" \t\n");
+	str = str.substr(s, e - s + 1);
 }
-/******�����ض���ʽ������******/
-//C++��û��Split()�����������Ҫ�Զ��庯���������ݣ���C#��Java�����������
+
 vector<string> getStr(string str)
 {
-	int j=0;
+	int j = 0;
 	string a[100];
 	vector<string> v_a;
 	//Split()
-	for(unsigned int i=0;i<str.size();i++)
+	for (unsigned int i = 0; i < str.size(); i++)
 	{
-		if((str[i]!=',')&&str[i]!='\0')
+		if ((str[i] != ',') && str[i] != '\0')
 		{
-			a[j]+=str[i];
+			a[j] += str[i];
 		}
 		else j++;
 	}
 
-	for(int k=0;k<j+1;k++)
+	for (int k = 0; k < j + 1; k++)
 	{
 		v_a.push_back(a[k]);
 	}
 	return v_a;
 }
-/******�����ض���ʽ������******/
 
-/**
-* path:Ŀ¼
-* files�����ڱ����ļ�����vector
-* r���Ƿ���Ҫ������Ŀ¼
-*/
-void listDir(string real_dir,vector<string>& files,bool r){
+// ディレクトリ内のファイル一覧を取得
+void listDir(string real_dir, vector<string>& files, bool r) 
+{
 	DIR *pDir;
 	struct dirent *ent;
 	string childpath;
 	string absolutepath;
 	pDir = opendir(real_dir.c_str());
-	while ((ent = readdir(pDir)) != NULL){
-		if (ent->d_type & DT_DIR){
-			if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0){
+	while ((ent = readdir(pDir)) != NULL)
+	{
+		if (ent->d_type & DT_DIR)
+		{
+			if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+			{
 				continue;
 			}
-			if(r){ //�����Ҫ������Ŀ¼
-				childpath=real_dir+ent->d_name;
-				listDir(childpath,files);
+			if (r)
+			{
+				childpath = real_dir + ent->d_name + "/";
+				listDir(childpath, files);
 			}
 		}
-		else{
-			absolutepath= real_dir+ent->d_name;
-			files.push_back(ent->d_name);//�ļ���
+		else
+		{
+			absolutepath = real_dir + ent->d_name;
+			files.push_back(ent->d_name);
 		}
 	}
-	sort(files.begin(),files.end());//����
+	sort(files.begin(),files.end());
 }
-void SaveEllipses(const string& fileName, const vector<Ellipse>& ellipses){
+
+// 検出した楕円のパラメータを保存
+void SaveEllipses(const string& fileName, const vector<Ellipse>& ellipses)
+{
 	unsigned n = ellipses.size();
 	vector<string> resultString;
 	stringstream resultsitem;
-	// Save number of ellipses
+
 	resultsitem << n ;
 	resultString.push_back(resultsitem.str());
-	// Save ellipses
-	for (unsigned i = 0; i<n; ++i)
+
+	for (unsigned i = 0; i < n; ++i)
 	{
 		const Ellipse& e = ellipses[i];
 		resultsitem.str("");
@@ -398,13 +388,13 @@ void SaveEllipses(const string& fileName, const vector<Ellipse>& ellipses){
 			<< e._rad << "\t" << e._score;
 		resultString.push_back(resultsitem.str());
 	}
-	writeFile(fileName,resultString);
-	for (int i=0;i<resultString.size();i++){
-		cout<<resultString[i]<<endl;
+	writeFile(fileName, resultString);
+	for (int i = 0; i < resultString.size(); i++)
+	{
+		cout << resultString[i] << endl;
 	}
 }
 
-// 14pr
 // Should be checked
 void SaveEllipses(const string& workingDir, const string& imgName, const vector<Ellipse>& ellipses /*, const vector<double>& times*/) 
 {
@@ -417,9 +407,8 @@ void SaveEllipses(const string& workingDir, const string& imgName, const vector<
 	}
 	unsigned n = ellipses.size();
 
-	// Save number of ellipses
 	out << n << "\n";
-	// Save ellipses
+
 	for (unsigned i = 0; i<n; ++i)
 	{
 		const Ellipse& e = ellipses[i];
@@ -428,6 +417,7 @@ void SaveEllipses(const string& workingDir, const string& imgName, const vector<
 	out.close();
 }
 
+// Ground Truthの読み込み
 void LoadGT(vector<Ellipse>& gt, const string& sGtFileName, bool bIsAngleInRadians)
 {
 	ifstream in(sGtFileName);
@@ -450,7 +440,6 @@ void LoadGT(vector<Ellipse>& gt, const string& sGtFileName, bool bIsAngleInRadia
 
 		if (!bIsAngleInRadians)
 		{
-			// convert to radians
 			e._rad = float(e._rad * CV_PI / 180.0);
 		}
 
@@ -460,65 +449,19 @@ void LoadGT(vector<Ellipse>& gt, const string& sGtFileName, bool bIsAngleInRadia
 			e._a = e._b;
 			e._b = temp;
 
-			e._rad = e._rad + float(0.5*CV_PI);
+			e._rad = e._rad + float(0.5 * CV_PI);
 		}
 
-		e._rad = fmod(float(e._rad + 2.f*CV_PI), float(CV_PI));
+		e._rad = fmod(float(e._rad + 2.f * CV_PI), float(CV_PI));
 		e._score = 1.f;
 		gt.push_back(e);
 	}
 	in.close();
 }
 
-// Should be checked
-bool LoadTest(vector<Ellipse>& ellipses, const string& sTestFileName, vector<double>& times, bool bIsAngleInRadians)
-{
-	ifstream in(sTestFileName);
-	if (!in.good())
-	{
-		cout << "Error opening: " << sTestFileName << endl;
-		return false;
-	}
-
-	times.resize(6);
-	in >> times[0] >> times[1] >> times[2] >> times[3] >> times[4] >> times[5];
-
-	unsigned n;
-	in >> n;
-
-	ellipses.clear();
-
-	if (n == 0) return true;
-
-	ellipses.reserve(n);
-
-	while (in.good() && n--)
-	{
-		Ellipse e;
-		in >> e._xc >> e._yc >> e._a >> e._b >> e._rad >> e._score;
-
-		if (!bIsAngleInRadians)
-		{
-			e._rad = e._rad * float(CV_PI / 180.0);
-		}
-
-		e._rad = fmod(float(e._rad + 2.0*CV_PI), float(CV_PI));
-
-		if ((e._a > 0) && (e._b > 0) && (e._rad >= 0))
-		{
-			ellipses.push_back(e);
-		}
-	}
-	in.close();
-
-	// Sort ellipses by decreasing score
-	sort(ellipses.begin(), ellipses.end());
-
-	return true;
-}
 // Should be checked !!!!!
-//  TestOverlap
-float Evaluate(const vector<Ellipse>& ellGT, const vector<Ellipse>& ellTest, const float th_score, const Mat3b& img)
+// 評価スコアの計算
+float Evaluate(const vector<Ellipse>& ellGT, const vector<Ellipse>& ellTest, const float th_score, const cv::Mat3b& img)
 {
 	float threshold_overlap = 0.8f;
 	//float threshold = 0.95f;
@@ -528,33 +471,31 @@ float Evaluate(const vector<Ellipse>& ellGT, const vector<Ellipse>& ellTest, con
 
 	unsigned sz_test = unsigned(min(1000, int(size_test)));
 
-	vector<Mat1b> gts(sz_gt);
-	vector<Mat1b> tests(sz_test);
-	//����ÿ��Ŀ����Բ
+	vector<cv::Mat1b> gts(sz_gt);
+	vector<cv::Mat1b> tests(sz_test);
+
 	for (unsigned i = 0; i<sz_gt; ++i)
 	{
 		const Ellipse& e = ellGT[i];
 
-		Mat1b tmp(img.rows, img.cols, uchar(0));
-		ellipse(tmp, Point((int)e._xc, (int)e._yc), Size((int)e._a, (int)e._b), e._rad * 180.0 / CV_PI, 0.0, 360.0, Scalar(255), -1);
+		cv::Mat1b tmp(img.rows, img.cols, uchar(0));
+		cv::ellipse(tmp, cv::Point((int)e._xc, (int)e._yc), cv::Size((int)e._a, (int)e._b), e._rad * 180.0 / CV_PI, 0.0, 360.0, cv::Scalar(255), -1);
 		gts[i] = tmp;
 	}
-	//���Ƽ�����Բ
 	for (unsigned i = 0; i<sz_test; ++i)
 	{
 		const Ellipse& e = ellTest[i];
 
-		Mat1b tmp(img.rows, img.cols, uchar(0));
-		ellipse(tmp, Point((int)e._xc, (int)e._yc), Size((int)e._a, (int)e._b), e._rad * 180.0 / CV_PI, 0.0, 360.0, Scalar(255), -1);
+		cv::Mat1b tmp(img.rows, img.cols, uchar(0));
+		cv::ellipse(tmp, cv::Point((int)e._xc, (int)e._yc), cv::Size((int)e._a, (int)e._b), e._rad * 180.0 / CV_PI, 0.0, 360.0, cv::Scalar(255), -1);
 		tests[i] = tmp;
 	}
 
-	Mat1b overlap(sz_gt, sz_test, uchar(0));
+	cv::Mat1b overlap(sz_gt, sz_test, uchar(0));
 	for (int r = 0; r < overlap.rows; ++r)
 	{
 		for (int c = 0; c < overlap.cols; ++c)
 		{
-			//�ص�����ռ�������ı��� ����ϲ�������ֵ Ϊ255
 			overlap(r, c) = TestOverlap(gts[r], tests[c], threshold_overlap) ? uchar(255) : uchar(0);
 		}
 	}
@@ -562,10 +503,9 @@ float Evaluate(const vector<Ellipse>& ellGT, const vector<Ellipse>& ellTest, con
 	int counter = 0;
 
 	vector<bool> vec_gt(sz_gt, false);
-	//����ÿ����һ���ʹ����ҵ�
+
 	for (unsigned int i = 0; i < sz_test; ++i)
 	{
-		//const Ellipse& e = ellTest[i];
 		for (unsigned int j = 0; j < sz_gt; ++j)
 		{
 			if (vec_gt[j]) { continue; }
@@ -613,10 +553,11 @@ float Evaluate(const vector<Ellipse>& ellGT, const vector<Ellipse>& ellTest, con
 	return fmeasure;
 }
 
-bool TestOverlap(const Mat1b& gt, const Mat1b& test, float th)
+// 楕円の重なりを計算（Jaccard係数、閾値はth）
+bool TestOverlap(const cv::Mat1b& gt, const cv::Mat1b& test, float th)
 {
-	float fAND = float(countNonZero(gt & test));
-	float fOR = float(countNonZero(gt | test));
+	float fAND = float(cv::countNonZero(gt & test));
+	float fOR = float(cv::countNonZero(gt | test));
 	float fsim = fAND / fOR;
 
 	return (fsim >= th);
@@ -625,15 +566,16 @@ bool TestOverlap(const Mat1b& gt, const Mat1b& test, float th)
 int Count(const vector<bool> v)
 {
 	int counter = 0;
-	for (unsigned i = 0; i<v.size(); ++i)
+	for (unsigned i = 0; i < v.size(); ++i)
 	{
 		if (v[i]) { ++counter; }
 	}
 	return counter;
 }
 
+// ノイズ付加
 void salt(cv::Mat& image, int n){
-	for(int k=0; k<n; k++){
+	for(int k = 0; k < n; k++){
 		int i = rand()%image.cols;
 		int j = rand()%image.rows;
 

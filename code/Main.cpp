@@ -1,23 +1,10 @@
-/*
-This code is intended for academic use only.
-You are free to use and modify the code, at your own risk.
-
-If you use this code, or find it useful, please refer to the paper:
-
-
-The comments in the code refer to the abovementioned paper.
-If you need further details about the code or the algorithm, please contact me at:
-
-lianbosong@foxmail.com
-
-last update: 
-*/
+// Main
 
 #include "stdafx.h"
 #include "tools.h"
 #include "CNEllipseDetector.h"
 using namespace std;
-using namespace cv;
+//using namespace cv;
 
 string SWORKINGDIR="EllipseDataset/";
 string DBNAME="Dataset#2";//"good2";//"/PrasadImages-DatasetPrasad";//"/RandomImages-Dataset#1";//"/BRhoChange";//
@@ -63,20 +50,20 @@ float showT(string sWorkingDir,string imagename, CNEllipseDetector cned,vector<E
 	vector<Ellipse> gt;
 	LoadGT(gt, sWorkingDir + "/gt/" + "gt_" + imagename + ".txt", false);
 	string filename = sWorkingDir + "/images/" + imagename;
-	Mat3b image = imread(filename);
-	Mat3b resultImage = image.clone();
+	cv::Mat3b image = cv::imread(filename);
+	cv::Mat3b resultImage = image.clone();
 
 	// Draw GT ellipses
 	for (unsigned i = 0; i < gt.size(); ++i)
 	{
 		Ellipse& e = gt[i];
-		Scalar color(0, 0, 255);
-		ellipse(resultImage, Point(cvRound(e._xc), cvRound(e._yc)), Size(cvRound(e._a), cvRound(e._b)), e._rad*180.0 / CV_PI, 0.0, 360.0, color, 3);
+		cv::Scalar color(0, 0, 255);
+		cv::ellipse(resultImage, cv::Point(cvRound(e._xc), cvRound(e._yc)), cv::Size(cvRound(e._a), cvRound(e._b)), e._rad*180.0 / CV_PI, 0.0, 360.0, color, 3);
 	}
 
 	cned.DrawDetectedEllipses(resultImage, ellsCned);
 
-	Mat3b res = image.clone();
+	cv::Mat3b res = image.clone();
 	float fmeasure = Evaluate(gt, ellsCned, fThScoreScore, res);
 
 	if (showpic){
@@ -88,27 +75,27 @@ float showT(string sWorkingDir,string imagename, CNEllipseDetector cned,vector<E
 }
 void OnVideo()
 {
-	VideoCapture cap(0);
+	cv::VideoCapture cap(0);
 	if(!cap.isOpened()) return;
 
 	CNEllipseDetector cned;
 
-	Mat1b gray;
+	cv::Mat1b gray;
 	while(true)
 	{	
-		Mat3b image;
+		cv::Mat3b image;
 		cap >> image;
-		cvtColor(image, gray, COLOR_BGR2GRAY);	
+		cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
 		vector<Ellipse> ellipses;
 
 		//Find Ellipses		
 		cned.Detect(gray, ellipses);
 		cned.DrawDetectedEllipses(image,ellipses);
-		imshow("Output", image);
+		cv::imshow("Output", image);
 
-			
-		if(waitKey(10) >= 0) break;
+
+		if(cv::waitKey(10) >= 0) break;
 	}
 }
 
@@ -117,17 +104,17 @@ vector<double> OnImage(string filename,float fThScoreScore,float fMinReliability
 	vector<double> times;
 	CNEllipseDetector cned;
 	// Read image
-	Mat3b image = imread(filename);
+	cv::Mat3b image = cv::imread(filename);
 	
 	if(!image.data){
 		cout<<filename<<" not exist"<<endl;
 		return times;
 	}
-	Size sz = image.size();
+	cv::Size sz = image.size();
 
 	// Convert to grayscale
-	Mat1b gray;
-	cvtColor(image, gray, COLOR_BGR2GRAY);
+	cv::Mat1b gray;
+	cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
 	// Parameters Settings (Sect. 4.2)
 	int		iThLength = ThLength;//����̫�̵Ļ�
@@ -141,7 +128,7 @@ vector<double> OnImage(string filename,float fThScoreScore,float fMinReliability
 	//fTaoCenters = 0.05f;
 	// Other constant parameters settings.
 	// Gaussian filter parameters, in pre-processing
-	Size	szPreProcessingGaussKernelSize	= Size(5,5);
+	cv::Size	szPreProcessingGaussKernelSize	= cv::Size(5,5);
 	double	dPreProcessingGaussSigma		= 1.0;
 
 	float	fDistanceToEllipseContour		= 0.1f;	// (Sect. 3.3.1 - Validation)
@@ -161,13 +148,13 @@ vector<double> OnImage(string filename,float fThScoreScore,float fMinReliability
 		);
 	// Detect 
 	vector<Ellipse> ellsCned;
-	Mat1b gray_clone=gray.clone();
+	cv::Mat1b gray_clone=gray.clone();
 	cned.Detect(gray_clone, ellsCned);
 	times = cned.GetTimes();
 
-	Mat3b resultImage = image.clone();
+	cv::Mat3b resultImage = image.clone();
 	cned.DrawDetectedEllipses(resultImage, ellsCned);
-	imshow("Cned", resultImage);
+	cv::imshow("Cned", resultImage);
 	if(showpic){
 		mkdir("result", 0777);
 		cv::imwrite("result/resultImage.jpg",resultImage);
@@ -242,16 +229,16 @@ vector<double> OnImage(string sWorkingDir,string imagename,float fThScoreScore,f
 
 	string filename = sWorkingDir + "/images/" + imagename;
 	// Read image
-	Mat3b image = imread(filename);
+	cv::Mat3b image = cv::imread(filename);
 	if(!image.data){
 		cout<<filename<<" not exist"<<endl;
 		return vector<double>(0);
 	}
-	Size sz = image.size();
+	cv::Size sz = image.size();
 
 	// Convert to grayscale
-	Mat1b gray;
-	cvtColor(image, gray, COLOR_BGR2GRAY);
+	cv::Mat1b gray;
+	cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
 	// Parameters Settings (Sect. 4.2)
 	int		iThLength = ThLength;//����̫�̵Ļ�
@@ -265,7 +252,7 @@ vector<double> OnImage(string sWorkingDir,string imagename,float fThScoreScore,f
 	//fTaoCenters = 0.05f;
 	// Other constant parameters settings.
 	// Gaussian filter parameters, in pre-processing
-	Size	szPreProcessingGaussKernelSize	= Size(5,5);
+	cv::Size	szPreProcessingGaussKernelSize	= cv::Size(5,5);
 	double	dPreProcessingGaussSigma		= 1.0;
 
 	float	fDistanceToEllipseContour		= 0.1f;	// (Sect. 3.3.1 - Validation)
@@ -285,7 +272,7 @@ vector<double> OnImage(string sWorkingDir,string imagename,float fThScoreScore,f
 		);
 	// Detect 
 	vector<Ellipse> ellsCned;
-	Mat1b gray_clone=gray.clone();
+	cv::Mat1b gray_clone=gray.clone();
 	cned.Detect(gray_clone, ellsCned);
 	vector<double> times = cned.GetTimes();
 	if(showpic){
@@ -366,8 +353,8 @@ int main_OnePic()
 	vector<double> results=OnImage(sWorkingDir,imagename,fThScoreScore,fMinReliability,fTaoCenters,true);
 	if(!results.empty()){
 		showTime(results);//��ʾ������Ϣ
-		waitKey(0);
-		cvDestroyWindow("Cned");
+		cv::waitKey(0);
+		cv::destroyWindow("Cned");
 	}
 	
 	return 0;
@@ -445,19 +432,19 @@ vector<double> OnImage_salt(string sWorkingDir,string imagename,int saltrate,flo
 
 	string filename = sWorkingDir + "/images/" + imagename;
 	// Read image
-	Mat3b image = imread(filename);
-	Size sz = image.size();
+	cv::Mat3b image = cv::imread(filename);
+	cv::Size sz = image.size();
 	int n=sz.width*sz.height;
 	
 	// Convert to grayscale
 	//medianBlur(image.clone(),image,3);
 
 	// gray
-	Mat1b gray;
-	cvtColor(image, gray, COLOR_BGR2GRAY);
+	cv::Mat1b gray;
+	cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 	//salt ����
 	salt(gray, n*saltrate/100);
-	medianBlur(gray,gray,3);
+	cv::medianBlur(gray,gray,3);
 	// Parameters Settings (Sect. 4.2)
 	int		iThLength = 16;//����̫�̵Ļ�
 	float	fThObb = 3.0f;
@@ -470,7 +457,7 @@ vector<double> OnImage_salt(string sWorkingDir,string imagename,int saltrate,flo
 	//fTaoCenters = 0.05f;
 	// Other constant parameters settings.
 	// Gaussian filter parameters, in pre-processing
-	Size	szPreProcessingGaussKernelSize	= Size(5,5);
+	cv::Size	szPreProcessingGaussKernelSize	= cv::Size(5,5);
 	double	dPreProcessingGaussSigma		= 1.0;
 
 	float	fDistanceToEllipseContour		= 0.1f;	// (Sect. 3.3.1 - Validation)
@@ -490,7 +477,7 @@ vector<double> OnImage_salt(string sWorkingDir,string imagename,int saltrate,flo
 		);
 	// Detect
 	vector<Ellipse> ellsCned;
-	Mat1b gray_clone=gray.clone();
+	cv::Mat1b gray_clone=gray.clone();
 	cned.Detect(gray_clone, ellsCned);
 	vector<double> times = cned.GetTimes();
 	double fmeasure = showT(sWorkingDir,imagename, cned,ellsCned,0.8f,showpic);
@@ -631,8 +618,8 @@ vector<double> detect4s(string sWorkingDir, string imageName){
 	bool showpic=false;
 
 	//show edges
-	Mat1b gray;
-	cvtColor(imread(wholeImageName), gray, COLOR_BGR2GRAY);
+	cv::Mat1b gray;
+	cv::cvtColor(cv::imread(wholeImageName), gray, cv::COLOR_BGR2GRAY);
 	CNEllipseDetector cned;
 	int		iThLength = ThLength;//����̫�̵Ļ�
 	float	fThPos = 1.0f;
@@ -641,7 +628,7 @@ vector<double> detect4s(string sWorkingDir, string imageName){
 	float	fMaxCenterDistance = 10;
 	int 	iNs = 16;//����
 
-	Size	szPreProcessingGaussKernelSize	= Size(5,5);
+	cv::Size	szPreProcessingGaussKernelSize	= cv::Size(5,5);
 	double	dPreProcessingGaussSigma		= 1.0;
 
 	float	fDistanceToEllipseContour		= 0.1f;	// (Sect. 3.3.1 - Validation)
@@ -659,7 +646,7 @@ vector<double> detect4s(string sWorkingDir, string imageName){
 		iNs
 		);
 
-	Mat1b gray_clone=gray.clone();
+	cv::Mat1b gray_clone=gray.clone();
 	int EdgeNumber=cned.showEdgeInPic(gray_clone,showpic);
 	Counts.push_back(EdgeNumber);
 
@@ -886,7 +873,7 @@ int main(int argc, char** argv)
 			vector<double> results=OnImage(filename,fThScoreScore,fMinReliability, fTaoCenters, true);
 			if(!results.empty()){
 				showTime(results);//��ʾ������Ϣ
-				waitKey(0);	cvDestroyWindow("Cned");
+				cv::waitKey(0);	cv::destroyWindow("Cned");
 				MethodId=0;
 				system("pause");
 			}
