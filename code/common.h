@@ -72,7 +72,7 @@ void Canny3(	cv::InputArray image, cv::OutputArray _edges,
             	int apertureSize, bool L2gradient );
 */
 
-// 以下にcanny関数を改良
+// 以下にcanny関数を改良（Canny_v3のみ使用）
 void Canny_v2(	cv::InputArray image, cv::OutputArray edges,
                 cv::OutputArray sobel_x, cv::OutputArray sobel_y,
                 double threshold1, double threshold2,
@@ -93,17 +93,21 @@ float inline ed2f(const cv::Point2f& A, const cv::Point2f& B) // Point2fはfloat
 	return (B.x - A.x)*(B.x - A.x) + (B.y - A.y)*(B.y - A.y);
 }
 
-// セグメント化、矩形計算（不要？cv::connectedComponentsWithStats関数の方がいいかも）
+// セグメント化（中身はcv::connectedComponentsWithStats関数を用いた自作関数に変更した）
 void Labeling(cv::Mat1b& image, vector<vector<cv::Point> >& segments, int iMinLength);
-void LabelingRect(cv::Mat1b& image, VVP& segments, int iMinLength, vector<cv::Rect>& bboxes);
 
-// 細線化（不要？cv::ximgproc::thinning関数の方がいいかも → opencv/contribのビルドが必要？）
-void Thinning(cv::Mat1b& imgMask, uchar byF=255, uchar byB=0);
+// 矩形計算 ※未使用
+//void LabelingRect(cv::Mat1b& image, VVP& segments, int iMinLength, vector<cv::Rect>& bboxes);
+
+// 細線化（cv::ximgproc::thinning関数の方がいいかも → opencv/contribのビルドが必要）
+// ※cv::ximgproc::thinning は3×3領域だが下の自作関数は4×4となっているからそのままにしとく
+// ※未使用
+//void Thinning(cv::Mat1b& imgMask, uchar byF = 255, uchar byB = 0);
 
 // 点のソート
 bool SortBottomLeft2TopRight(const cv::Point& lhs, const cv::Point& rhs);
 bool SortTopLeft2BottomRight(const cv::Point& lhs, const cv::Point& rhs);
-bool SortBottomLeft2TopRight2f(const cv::Point2f& lhs, const cv::Point2f& rhs);
+//bool SortBottomLeft2TopRight2f(const cv::Point2f& lhs, const cv::Point2f& rhs); // ※未使用
 
 // Ellipse構造体の定義
 struct Ellipse
@@ -119,7 +123,7 @@ struct Ellipse
 	Ellipse(float xc, float yc, float a, float b, float rad, float score = 0.f) : _xc(xc), _yc(yc), _a(a), _b(b), _rad(rad), _score(score) {};
 	Ellipse(const Ellipse& other) : _xc(other._xc), _yc(other._yc), _a(other._a), _b(other._b), _rad(other._rad), _score(other._score) {};
 
-	// 楕円の描画（指定色）
+	// 楕円の描画（指定色）※cvRoundはそのままでok
 	void Draw(const cv::Mat& img, const cv::Scalar& color, const int thickness)
 	{
 		cv::ellipse(img, cv::Point(cvRound(_xc),cvRound(_yc)), cv::Size(cvRound(_a),cvRound(_b)), _rad * 180.0 / CV_PI, 0.0, 360.0, color, thickness);
