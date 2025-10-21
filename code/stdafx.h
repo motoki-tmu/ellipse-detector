@@ -1,7 +1,3 @@
-// stdafx.h : 标准系统包含文件的包含文件，
-// 或是经常使用但不常更改的
-// 特定于项目的包含文件
-//
 #include <opencv2/imgproc/imgproc_c.h>
 #include <opencv2/highgui/highgui_c.h>
 #include <opencv2/opencv.hpp>

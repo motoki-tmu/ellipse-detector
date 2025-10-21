@@ -22,11 +22,11 @@ void point2Mat(cv::Point2f p1, cv::Point2f p2, float mat[2][2]);
 // 6点から不変量を計算
 float value4SixPoints(V2SP);
 
-// 画像のリサイズ（実際は拡大）
-void PyrDown(string picName);
+// 画像のリサイズ（実際は拡大）※未使用
+//void PyrDown(string picName);
 
-// 画像のリサイズ（scaleで倍率指定）
-cv::Mat matResize(cv::Mat src, double scale);
+// 画像のリサイズ（scaleで倍率指定）※未使用
+//cv::Mat matResize(cv::Mat src, double scale);
 
 // 検出した楕円のパラメータを保存
 void SaveEllipses(const string& fileName, const vector<Ellipse>& ellipses);
@@ -51,8 +51,8 @@ void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture);
 
 // ファイルの書き込み、読み込み、トリム
 int writeFile(string fileName_cpp, vector<string> vsContent);
-int readFile(string fileName_cpp);
-int readFileByChar(string fileName_split);
+//int readFile(string fileName_cpp); // ※未使用
+//int readFileByChar(string fileName_split); // ※未使用
 void Trim(string &str);
 
 vector<string> getStr(string str);

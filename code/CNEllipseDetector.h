@@ -11,11 +11,11 @@ using namespace std;
 
 #ifndef GLOBAL // includeガード
 #define GLOBAL
-	extern bool myselect1;
+	extern bool myselect1; // トリプレットに関するスイッチ
 	extern bool myselect2;
 	extern bool myselect3;
-	extern float tCNC;  // 閾値
-	extern float tTCNl; // CNED.cppで定義、ここでは宣言のみ(extern)
+	extern float tCNC;  // 円弧が同一の楕円のものかの判定
+	extern float tTCNl; // 直線を除外するための閾値
 #endif
 
 // 制約（現在はTCNだけ無効化）
@@ -37,12 +37,12 @@ struct EllipseData
 {
 	bool isValid;	  // 計算結果の判定
 	float ta;		  // 中心線の傾き
-	float tb;		  // 中心線の傾き
+	float tb;		  // （二つの平行弦の中点から傾きが iNs/2 個得られる、それらの中央値）
 	float ra;		  // 参照線の傾き
-	float rb;		  // 参照線の傾き
-	cv::Point2f Ma;	  // 重心
-	cv::Point2f Mb;	  // 重心
-	cv::Point2f Cab;  // 中心
+	float rb;		  // （円弧の端点と中点を結ぶ線）
+	cv::Point2f Ma;	  // 中央中心点
+	cv::Point2f Mb;	  // （iNs個の参照線の中点の中央値）
+	cv::Point2f Cab;  // 推定中心
 	vector<float> Sa; // 平行な弦の傾きの集合
 	vector<float> Sb; // 平行な弦の傾きの集合
 };
@@ -105,7 +105,7 @@ public:
 	CNEllipseDetector(void);     // コンストラクタ、インスタンス生成時に呼ばれる
 	~CNEllipseDetector(void);	 // デストラクタ、インスタンス破棄時に呼ばれる
 
-	// 
+	// ※未使用
 	void DetectAfterPreProcessing(vector<Ellipse>& ellipses, const cv::Mat1b& E, const cv::Mat1f& PHI);
 
 	// グレースケール画像から楕円検出
@@ -144,7 +144,7 @@ public:
 
 	//debug slb
 	void showEdgeInPic(cv::Mat1b& I);
-	void showAllEdgeInPic(cv::Mat1b& I);
+	void showAllEdgeInPic(cv::Mat1b& I); // ※未使用
 	int showEdgeInPic(cv::Mat1b& I,bool showedge);
 
 
@@ -161,19 +161,19 @@ private:
 	// 円弧のペアとインデックスからキー生成
 	uint inline GenerateKey(uchar pair, ushort u, ushort v);
 
-	// 画像の平滑化、エッジ検出
+	// 画像の平滑化、エッジ検出、勾配計算
 	void PreProcessing(cv::Mat1b& I, cv::Mat1b& DP, cv::Mat1b& DN);
 
-	// 小さいエッジ除去
+	// 小さいエッジ除去 ※未使用
 	void RemoveShortEdges(cv::Mat1b& edges, cv::Mat1b& clean);
 
-	// クラスタの統合
+	// クラスタの統合（同一楕円に複数描画されるのを防ぐ）
 	void ClusterEllipses(vector<Ellipse>& ellipses);
 
 	// アキュムレータ配列から投票数の多いインデックスを探索
-	int FindMaxK(const vector<int>& v) const;
-	int FindMaxN(const vector<int>& v) const;
-	int FindMaxA(const vector<int>& v) const;
+	int FindMaxK(const vector<int>& v) const; // 楕円の傾きを探索
+	int FindMaxN(const vector<int>& v) const; // 短軸/長軸比を探索
+	int FindMaxA(const vector<int>& v) const; // 長軸長さを探索
 
 	int FindMaxK(const int* v) const;
 	int FindMaxN(const int* v) const;

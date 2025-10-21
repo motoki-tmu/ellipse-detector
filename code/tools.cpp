@@ -64,7 +64,7 @@ void point2Mat(cv::Point2f p1, cv::Point2f p2, float mat[2][2])
 	mat[1][1] = p2.y;
 }
 
-// 6点から不変量を計算（論文に記載されていない、Main.cppでも呼び出されていないし、もしかしたら使われていない？）
+// 6点から不変量を計算（論文に記載されていない？）
 float value4SixPoints( V2SP ) // V2SPはヘッダファイルで定義されている
 {
 	float result = 1;
@@ -162,7 +162,7 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<cv::Ma
 	cv::destroyWindow(MultiShow_WinName); 
 }  
 
-// 画像のリサイズ（実際は拡大）
+/* ※未使用
 void PyrDown(string picName)
 {
 	cv::Mat img1 = cv::imread(picName);
@@ -178,9 +178,10 @@ void PyrDown(string picName)
 
 	cv::waitKey(10000);
 }
+*/
 
-// 画像のリサイズ（scaleで倍率指定）
-cv::Mat matResize(cv::Mat src,double scale)
+/* ※未使用
+cv::Mat matResize(cv::Mat src, double scale)
 {
 	cv::Mat img2;
 	bool showtimeandpic = false;
@@ -210,6 +211,7 @@ cv::Mat matResize(cv::Mat src,double scale)
 	}
 	return img2;
 }
+*/
 
 // エッジ描画
 void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture)
@@ -259,6 +261,7 @@ int writeFile(string fileName_cpp, vector<string> vsContent)
 	return 1;
 }
 
+/* ※未使用
 int readFile(string fileName_cpp)
 {
 	string line = "";
@@ -280,7 +283,9 @@ int readFile(string fileName_cpp)
 	}
 	return 0;
 }
+*/
 
+/* ※未使用
 int readFileByChar(string fileName_split)
 {
 	string line = "";
@@ -308,6 +313,7 @@ int readFileByChar(string fileName_split)
 	}
 	return 0;
 }
+*/
 
 void Trim(string &str)
 {
