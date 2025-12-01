@@ -225,10 +225,11 @@ void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture)
 	cv::Point current_point;
 	for (int iEdge = 0; iEdge < sEdge; iEdge++)
 	{
-		int r = rand() % 256;
-		int g = rand() % 256;
-		int b = rand() % 256;
-		cv::Scalar color = cv::Scalar(b, g, r);
+		// int r = rand() % 256;
+		// int g = rand() % 256;
+		// int b = rand() % 256;
+		//cv::Scalar color = cv::Scalar(b, g, r);
+		cv::Scalar color = cv::Scalar(255, 255, 255); // 白で固定
 		vector<cv::Point> Edge = points_.at(iEdge);
 		int sPoints = Edge.size();
 		for (int iPoint = 0; iPoint < sPoints - 1; iPoint++)
@@ -236,6 +237,71 @@ void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture)
 			center = Edge.at(iPoint);
 			prev_point = Edge.at(iPoint);
 			current_point = Edge.at(iPoint + 1);
+			cv::line(picture, prev_point, current_point, color, 1, cv::LINE_AA);
+		}
+	}
+}
+
+void showEdge1(vector<vector<cv::Point>> points_, cv::Mat& picture)
+{
+	srand( (unsigned)time( NULL )); int radius = 1; cv::Point center;
+	int sEdge = points_.size(); cv::Point prev_point; cv::Point current_point;
+	for (int iEdge = 0; iEdge < sEdge; iEdge++)
+	{
+		cv::Scalar color = cv::Scalar(0, 0, 255); // 赤
+		vector<cv::Point> Edge = points_.at(iEdge);
+		int sPoints = Edge.size();
+		for (int iPoint = 0; iPoint < sPoints - 1; iPoint++)
+		{
+			center = Edge.at(iPoint); prev_point = Edge.at(iPoint); current_point = Edge.at(iPoint + 1);
+			cv::line(picture, prev_point, current_point, color, 1, cv::LINE_AA);
+		}
+	}
+}
+void showEdge2(vector<vector<cv::Point>> points_, cv::Mat& picture)
+{
+	srand( (unsigned)time( NULL )); int radius = 1; cv::Point center;
+	int sEdge = points_.size(); cv::Point prev_point; cv::Point current_point;
+	for (int iEdge = 0; iEdge < sEdge; iEdge++)
+	{
+		cv::Scalar color = cv::Scalar(255, 0, 0); // 青
+		vector<cv::Point> Edge = points_.at(iEdge);
+		int sPoints = Edge.size();
+		for (int iPoint = 0; iPoint < sPoints - 1; iPoint++)
+		{
+			center = Edge.at(iPoint); prev_point = Edge.at(iPoint); current_point = Edge.at(iPoint + 1);
+			cv::line(picture, prev_point, current_point, color, 1, cv::LINE_AA);
+		}
+	}
+}
+void showEdge3(vector<vector<cv::Point>> points_, cv::Mat& picture)
+{
+	srand( (unsigned)time( NULL )); int radius = 1; cv::Point center;
+	int sEdge = points_.size(); cv::Point prev_point; cv::Point current_point;
+	for (int iEdge = 0; iEdge < sEdge; iEdge++)
+	{
+		cv::Scalar color = cv::Scalar(0, 255, 255); // 黄色
+		vector<cv::Point> Edge = points_.at(iEdge);
+		int sPoints = Edge.size();
+		for (int iPoint = 0; iPoint < sPoints - 1; iPoint++)
+		{
+			center = Edge.at(iPoint); prev_point = Edge.at(iPoint); current_point = Edge.at(iPoint + 1);
+			cv::line(picture, prev_point, current_point, color, 1, cv::LINE_AA);
+		}
+	}
+}
+void showEdge4(vector<vector<cv::Point>> points_, cv::Mat& picture)
+{
+	srand( (unsigned)time( NULL )); int radius = 1; cv::Point center;
+	int sEdge = points_.size(); cv::Point prev_point; cv::Point current_point;
+	for (int iEdge = 0; iEdge < sEdge; iEdge++)
+	{
+		cv::Scalar color = cv::Scalar(0, 255, 0); // 緑
+		vector<cv::Point> Edge = points_.at(iEdge);
+		int sPoints = Edge.size();
+		for (int iPoint = 0; iPoint < sPoints - 1; iPoint++)
+		{
+			center = Edge.at(iPoint); prev_point = Edge.at(iPoint); current_point = Edge.at(iPoint + 1);
 			cv::line(picture, prev_point, current_point, color, 1, cv::LINE_AA);
 		}
 	}

@@ -8,8 +8,8 @@
 using namespace std;
 //using namespace cv;
 
-string SWORKINGDIR = "EllipseDataset/";
-string DBNAME = "Dataset#2";
+string SWORKINGDIR = "/home/bakauruhu/Project/ellipse-detector/Dataset/";
+string DBNAME = "crater";
 string TESTIMGNAME = "027_0003.jpg";
 int MethodId = 1;
 
@@ -74,7 +74,7 @@ float showT(string sWorkingDir, string imagename, CNEllipseDetector cned, vector
 	{
 		cout << "F-Measure: " << fmeasure << endl;
 		imshow("Cned", resultImage);
-		cv::imwrite("result/resultImage.jpg",resultImage);
+		cv::imwrite("result/result.jpg",resultImage);
 	}
 	return fmeasure;
 }
@@ -162,7 +162,7 @@ vector<double> OnImage(string filename, float fThScoreScore, float fMinReliabili
 	if(showpic)
 	{
 		mkdir("result", 0777);
-		cv::imwrite("result/resultImage.jpg", resultImage);
+		cv::imwrite("result/result.jpg", resultImage);
 		SaveEllipses("result/result.txt", ellsCned);
 	}
 
@@ -807,7 +807,7 @@ vector<double> database_4s(string sWorkingDir)
 int main_TCN()
 {
 	string sWorkingDirPath = SWORKINGDIR;
-	string sWorkingDirName[3] = {"PrasadImages-DatasetPrasad", "RandomImages-Dataset#1", "good2"};
+	string sWorkingDirName[1] = {"crater"};
 
 	//float tTCN[6] = {0, 1.0f/64, 2.0f/64, 4.0f/64, 6.0f/64, 8.0f/64};
 	float tTCN[6] = {0, 1, 2, 3, 4, 5};
@@ -829,7 +829,7 @@ int main_TCN()
 	vector<string> resultString;
 	resultString.push_back("iDir, tTCNl, EdgeNumber, select100Time, cOFE1, cOGFC1, F-m1, select110Time, cOFE2, cOGFC2, F-m2, select111Time, cOFE3, cOGFC3, F-m3, select000Time, cOFE, cOGFC, F-m");
 	MinOrientedRectSide = 0;
-	for (iDir = 0; iDir < 3; iDir++)
+	for (iDir = 0; iDir < 1; iDir++)
 	{
 		for (int itTCN = 0; itTCN < 6; itTCN++)
 		{
@@ -905,12 +905,12 @@ int main_CNC()
 // main!!!
 int main(int argc, char** argv) // argc = argument count, argv = argument vector
 {
-	tCNC = 0.2f;
-	fThScoreScore = 0.6f;	//0.8
-	fMinReliability	= 0.4f;	// Const parameters to discard bad ellipses 0.4
-	fTaoCenters = 0.04f;//0.05 	
-	ThLength = 16;//16
-	MinOrientedRectSide = 3.0f;
+	tCNC = 0.5f;            // 0.2
+	fThScoreScore = 0.6f;	// 0.6
+	fMinReliability	= 0.1f;	// 0.4
+	fTaoCenters = 0.04f;    // 0.04 	
+	ThLength = 16;          // 16
+	MinOrientedRectSide = 1.0f; // 3.0
 
 	if (argc == 2) // 引数が2つの場合
 	{
@@ -994,14 +994,16 @@ vector<double> results = OnImage(filename, fThScoreScore, fMinReliability, fTaoC
 	{
 		PreProcessing(入力：画像, 出力：Mat型 DP, DN)
 		{
-			Canny_v3(入力：画像、出力：エッジ画像、勾配計算方法はマンハッタン(false))
+			Canny_v2 or v3(入力：画像、出力：エッジ画像、勾配計算方法はマンハッタン(false))
 			勾配でエッジをDPとDNに分類
 		}
 
 		DetectEdges13 or 24(入力：DP or DN、出力：VVP points_1~4)
 		{
 			Labeling(入力：画像、出力：VVP型 エッジを構成するピクセル座標群)
-			エッジの曲率判定 → 凸判定でエッジを4象限にまで分類
+			ノイズ除去(ThLength以下の大きさのエッジを除去)
+			直線除去(fMinOrientedRectSide比)
+			凸判定でエッジを4象限にまで分類
 		}
 
 		Triplets(入力：3種類のpoints_n、出力：楕円パラメータ)
@@ -1037,5 +1039,34 @@ vector<double> results = OnImage(filename, fThScoreScore, fMinReliability, fTaoC
 	cned.DrawDetectedEllipse
 	SaveEllipses
 	showTime
-	
-******************************************************************************************************************
+
+
+＊＊閾値について＊＊
+
+＊mainですぐ宣言＊ → 主にこいつらを調整？
+tCNC = 0.2 : value4SxPointsで同一円弧か判定するための閾値、Tripletsで使用
+fThScoreScore = 0.6 : 
+fMinReliability = 0.4 : 楕円の円周長に対する円弧長さ、FindEllipse()で使用
+fTaoCenters = 0.04 : 2つの楕円中心距離の閾値であるfMaxCenterDistanceの値決定に用いられる、式はmain.cppで定義、Paper Sec 4.2
+ThLength = 16 : エッジの最小必要長さ（短いエッジを削除）、Labeling()で使用（cnedではiMinEdgeLength、commonではiMinLengthとして宣言）
+MinOrientedRectSide = 3.0 : エッジを囲む最小の長方形の辺比の閾値（直線除外）、DetectEdges13()で使用
+
+＊呼び出し関数先で定義＊ → 変える必要がなさそうな閾値は # でチェック
+# szPreProcessingGaussKernelSize = cv::Size(5, 5) : ガウシアンフィルタのカーネルサイズ、PreProcessing()で使用
+# dPreProcessingGaussSigma = 1.0 : ガウシアンフィルタのsigma、PreProcessing()で使用
+apertureSize = 3 : Sobelフィルタのカーネルサイズ、Canny_v3で使用。妥当、5だとノイズに強いがエッジの位置精度低下
+percent_of_pixels_not_edges = 0.9 : high_threshを値決定に用いる、画像全体のうち90%はエッジではないという仮定
+threshold_ratio = 0.3 : low_threshを決定するための値、ヒストグラムにより決定したhighにratioを掛けてlowを決定
+tTCN1 = 0.05 : 始点・中点・終点からなる三角形の面積から曲率判定、DetectEdges13()で使用（TCNは現在無効化）
+tTCN2 = 0.05 : 全ての点の曲率を計算して曲率判定、DetectEdges13()で使用（TCNは現在無効化）
+# fThPosition = 1.0 : 円弧が正しい位置関係にあるか判定、Triplets()で使用
+# fMaxCenterDistance = 5.0 : 2つの楕円中心距離、だがmainでは数式で表現されているから不要？
+iNs = 16 : 参照線と平行な弦の探索数、GetFastCenter()で使用
+fDistanceToEllipseContours = 0.1 : ある点が楕円の輪郭上にあると見なす閾値、FindEllipse()で使用
+fMinScore = 0.7 : 楕円候補としてみなすために必要な、輪郭上にある点の割合、FindEllipse()で使用
+th_Da = 0.1 : 2つの楕円の長軸の差分、ClusterEllipse()で使用
+th_Db = 0.1 : 2つの楕円の短軸の差分、ClusterEllipse()で使用
+th_Dr = 0.1 : 2つの楕円の回転角の差分、ClusterEllipse()で使用
+th_Dc_ratio = 0.1 : 2つの楕円の中心間距離の閾値決定に用いる、ClusterEllipse()で使用
+th_Dr_circle = 0.9 : 2つの楕円の短長軸比の閾値、ClusterEllipse()で使用
+******************************************************************************************************************/

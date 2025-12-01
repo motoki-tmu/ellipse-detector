@@ -6,6 +6,8 @@
 #include <opencv2/core.hpp>
 #include <vector>
 
+#include "LSM.h"
+
 using namespace std;
 //using namespace cv;
 
@@ -18,7 +20,7 @@ using namespace std;
 	extern float tTCNl; // 直線を除外するための閾値
 #endif
 
-// 制約（現在はTCNだけ無効化）
+// 制約（cppの方で#ifndefで記述 → ここで#defineされている場合cppの方は無効化）
 #define DISCARD_TCN
 //#define DISCARD_CONSTRAINT_OBOX
 //#define DISCARD_CONSTRAINT_CONVEXITY
@@ -157,6 +159,8 @@ private:
 	static const ushort PAIR_23 = 0x01;
 	static const ushort PAIR_34 = 0x02;
 	static const ushort PAIR_14 = 0x03;
+	static const ushort PAIR_13 = 0x04;
+	static const ushort PAIR_24 = 0x05;
 
 	// 円弧のペアとインデックスからキー生成
 	uint inline GenerateKey(uchar pair, ushort u, ushort v);
@@ -248,4 +252,21 @@ private:
 		_times[idx] += _timesHelper[idx];
 	};
 
+
+	// 自作、ダブレット
+	void Doublets12(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses);
+	void Doublets23(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses);
+	void Doublets34(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses);
+	void Doublets41(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses);
+	void Doublets13(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses);
+	void Doublets24(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses);
+
+	// 自作、ダブレットの場合
+	void FindEllipses2(VP& edge_ij, vector<Ellipse>& ellipses);
+
+	// 自作、楕円の選定（極端な楕円の削除）
+	void DeleteEllipses(vector<Ellipse>& ellipses);
+
+	// 自作、重なる楕円を選定
+	void OverlapEllipses(const cv::Size& sz, vector<Ellipse>& ellipses);
 };

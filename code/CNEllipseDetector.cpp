@@ -24,10 +24,10 @@ CNEllipseDetector::CNEllipseDetector(void) : _times(6, 0.0), _timesHelper(6, 0.0
 	_fThPosition = 1.0f;                              // 2つの円弧の位置関係の閾値（大きく離れたペアを除外）
 	_fMaxCenterDistance = 100.0f * 0.05f;             // 2つの中心点誤差の閾値
 	_fMaxCenterDistance2 = _fMaxCenterDistance * _fMaxCenterDistance;
-	_iMinEdgeLength = 16;                             // エッジの最小必要長さ（短い円弧を除外）
+	_iMinEdgeLength = 16;                            // エッジの最小必要長さ（短い円弧を除外）
 	_fMinOrientedRectSide = 3.0f;                     // 円弧を囲む矩形の最小辺長（直線を除外）
 	_fDistanceToEllipseContour = 0.1f;                // ある点が楕円の輪郭上にあるとみなす閾値
-	_fMinScore =0.7f;                                 // 楕円の判定スコア
+	_fMinScore =0.4f;                                 // 楕円の判定スコア
 	_fMinReliability =0.5;                            // 楕円の信頼度
 	_uNs = 16;                                        // 探索する弦の数
 
@@ -66,10 +66,10 @@ void CNEllipseDetector::SetParameters(cv::Size	szPreProcessingGaussKernelSize,
 
 }
 
-// 円弧のペアとインデックスからキー生成
+// 円弧のペアとインデックスからキー生成（キーを6つ定義するため、3bitに拡張）
 uint inline CNEllipseDetector::GenerateKey(uchar pair, ushort u, ushort v)
 {
-	return (pair << 30) + (u << 15) + v; // 0~14にv, 15~29にu, 30と31にpairを配置
+	return (pair << 29) + (u << 15) + v; // 0~14にv, 15~28にu, 29~31にpairを配置
 };
 
 int CNEllipseDetector::FindMaxK(const int* v) const // 楕円の傾きを探索
@@ -199,7 +199,7 @@ void CNEllipseDetector::GetFastCenter(vector<cv::Point>& e1, vector<cv::Point>& 
 		{
 			iota(indexes.begin(), indexes.end(), hsize_2);
 		}
-		for (uint ii = 0; ii<minPoints; ++ii) // 平行な弦の探索
+		for (uint ii = 0; ii < minPoints; ++ii) // 平行な弦の探索
 		{
 			uint i = indexes[ii];
 
@@ -599,7 +599,7 @@ void CNEllipseDetector::DetectEdges24(cv::Mat1b& DN, VVP& points_2, VVP& points_
 	}
 };
 
-// 長短軸半径、角度を決定
+// 1つの楕円候補の長短軸半径、角度を決定 → 閾値で正常な楕円か判定
 void CNEllipseDetector::FindEllipses(	cv::Point2f& center, // 入力：確定中心座標
 										VP& edge_i, VP& edge_j, VP& edge_k, // 入力：3つの円弧のピクセル座標リスト
 										EllipseData& data_ij, EllipseData& data_ik, // 入力：円弧ペアの傾きデータ
@@ -885,13 +885,13 @@ void CNEllipseDetector::FindEllipses(	cv::Point2f& center, // 入力：確定中
 
 	for (ushort l = 0; l < sz_ei; ++l)
 	{
-		float tx = float(edge_i[l].x) - ell._xc;
+		float tx = float(edge_i[l].x) - ell._xc;         // 楕円の中心を原点に
 		float ty = float(edge_i[l].y) - ell._yc;
-		float rx = (tx * _cos - ty * _sin);
+		float rx = (tx * _cos - ty * _sin);              // 楕円の傾きを打ち消すを方向に回転
 		float ry = (tx * _sin + ty * _cos);
 
-		float h = (rx * rx) * invA2 + (ry * ry) * invB2;
-		if (abs(h - 1.f) < _fDistanceToEllipseContour)
+		float h = (rx * rx) * invA2 + (ry * ry) * invB2; // 楕円の方程式
+		if (abs(h - 1.f) < _fDistanceToEllipseContour)   // ピクセルが輪郭上にあれば、h=1になるはず（fDistanceToEllipseContour = 0.1f）
 		{
 			++counter_on_perimeter;
 		}
@@ -1095,7 +1095,7 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 									unordered_map<uint, EllipseData>& data, // キャッシュ
 									vector<Ellipse>& ellipses) // 出力：楕円情報
 {
-	// それぞれの象限内の円弧数
+	// それぞれの象限に振り分けられた円弧数
 	ushort sz_i = ushort(pi.size());
 	ushort sz_j = ushort(pj.size());
 	ushort sz_k = ushort(pk.size());
@@ -1110,7 +1110,7 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 		cv::Point& pil = edge_i[sz_ei - 1];
 
 		VP rev_i(edge_i.size());
-		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
+		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin()); // 円弧iを逆順にしたものをrev_iに格納
 
 		for (ushort j = 0; j < sz_j; ++j)
 		{
@@ -1134,7 +1134,7 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 				continue;
 			}
 #endif
-			uint key_ij = GenerateKey(PAIR_12, i, j);
+			uint key_ij = GenerateKey(PAIR_12, i, j); // 閾値を突破したペア円弧の番号i, jのkeyを生成（まだ登録してない！）
 
 			for (ushort k = 0; k < sz_k; ++k)
 			{
@@ -1170,7 +1170,7 @@ void CNEllipseDetector::Triplets124(VVP& pi,
 				if (data.count(key_ij) == 0) // keyに登録されているかどうか
 				{
 					GetFastCenter(edge_j, rev_i, data_ij);
-					data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+					data.insert(pair<uint, EllipseData>(key_ij, data_ij)); // key登録、以降のkループでGetFastCenterを省略できる
 				}
 				else
 				{
@@ -1611,7 +1611,10 @@ void CNEllipseDetector::PreProcessing(cv::Mat1b& I, cv::Mat1b& DP, cv::Mat1b& DN
 	cv::Mat1s DX, DY;			//sobel derivatives
 
 	// エッジ検出
-	Canny_v3(I, E, DX, DY, 3, false);
+	Canny_v2(I, E, DX, DY, 100, 30, 3, false); 
+	// Canny_v3(I, E, DX, DY, 3, false);
+
+	cv::imwrite("edges/canny.jpg", E);
 
 	Toc(0); //edge detection
 
@@ -1742,21 +1745,82 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, vector<Ellipse>& ellipses)
 	// 入力画像Iのエッジ検出、勾配計算によるDPとDNの分類
 	PreProcessing(I, DP, DN);
 
+	// canny法によるエッジ画像保存
+	cv::Mat1b canny	= DP + DN;	
+	cv::imwrite("result/canny.jpg", canny);
+
 	Tac(1); //preprocessing
+
+	// 途中経過の楕円を描画するための用意
+	cv::Mat grayImage = I.clone();
+	cv::Mat3b colorImage;
+	cv::cvtColor(grayImage, colorImage, cv::COLOR_GRAY2BGR);
 
 	// エッジの凸方向による分類
 	DetectEdges13(DP, points_1, points_3);
 	DetectEdges24(DN, points_2, points_4);
+
+	// ノイズ・直線除去後のエッジ画像保存
+	cv::Mat picture(_szImg, CV_8UC3, cv::Scalar(0, 0, 0));
+	cv::Mat picture_white(_szImg, CV_8UC3, cv::Scalar(255, 255, 255));
+	vector<cv::Mat> imgs(4);
+	cv::Mat picture1 = picture.clone();
+	cv::Mat picture2 = picture.clone();
+	cv::Mat picture3 = picture.clone();
+	cv::Mat picture4 = picture.clone();
+	showEdge(points_1, picture1);
+	showEdge(points_2, picture2);
+	showEdge(points_3, picture3);
+	showEdge(points_4, picture4);
+	
+	cv::Mat picture5 = picture.clone(); // エッジ1色
+	showEdge(points_1, picture5);
+	showEdge(points_2, picture5);
+	showEdge(points_3, picture5);
+	showEdge(points_4, picture5);
+
+	cv::Mat picture6 = picture_white.clone(); // エッジ2色
+	showEdge1(points_1, picture6);
+	showEdge2(points_2, picture6);
+	showEdge1(points_3, picture6);
+	showEdge2(points_4, picture6);
+
+	imgs[0] = picture2;
+	imgs[1] = picture1;
+	imgs[2] = picture3;
+	imgs[3] = picture4; 
+
+	cv::imwrite("result/curveture.jpg", picture5);
+	cv::imwrite("result/curveture_4.jpg", picture6);
 
 	Toc(1); //preprocessing
 
 	Tic(2); //grouping
 
 	// トリプレットにより楕円パラメータ確定
+	
 	Triplets124(points_1, points_2, points_4, centers, ellipses);
 	Triplets231(points_2, points_3, points_1, centers, ellipses);
 	Triplets342(points_3, points_4, points_2, centers, ellipses);
 	Triplets413(points_4, points_1, points_3, centers, ellipses);
+	
+
+	// ダブレットにより楕円パラメータ確定
+	
+	Doublets12(points_1, points_2, centers, ellipses);
+	Doublets23(points_2, points_3, centers, ellipses);
+	Doublets34(points_3, points_4, centers, ellipses);
+	Doublets41(points_4, points_1, centers, ellipses);
+	Doublets13(points_1, points_3, centers, ellipses);
+	Doublets24(points_2, points_4, centers, ellipses);
+	
+
+	// Doublets後の楕円描画
+	int sz_Doublets = ellipses.size();
+	cout << "sz_Doublets: " << sz_Doublets << endl;
+	cv::Mat3b debugImage1 = colorImage.clone();
+	DrawDetectedEllipses(debugImage1, ellipses, 0, 2);
+	cv::imwrite("result/debug1.jpg", debugImage1);
 
 	Toc(2); //grouping	
 
@@ -1776,9 +1840,35 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, vector<Ellipse>& ellipses)
 
 	Tic(5);
 
+	// 自作、極端な楕円削除
+	DeleteEllipses(ellipses);
+
+	// DeleteEllipses後の楕円描画
+	int sz_Delete = ellipses.size();
+	cout << "sz_Delete: " << sz_Delete << endl;
+	cv::Mat3b debugImage2 = colorImage.clone();
+	DrawDetectedEllipses(debugImage2, ellipses, 0, 2);
+	cv::imwrite("result/debug2.jpg", debugImage2);
+	
+
+	// 自作、重なる楕円削除
+	OverlapEllipses(_szImg, ellipses);
+
 	// Cluster detections
-	ClusterEllipses(ellipses);
+	//ClusterEllipses(ellipses);
+
+	// OverlapEllipses後の楕円描画（最終結果と等しいから意味ない）
+	/*
+	int sz_Overlap = ellipses.size();
+	cout << "sz_Overlap: " << sz_Overlap << endl;
+	cv::Mat3b debugImage3 = colorImage.clone();
+	DrawDetectedEllipses(debugImage3, ellipses, 0, 2);
+	cv::imwrite("result/debug3.jpg", debugImage3);
+	*/
+
 	Toc(5);
+
+	CraterMatching(ellipses);
 };
 
 // クラスタの統合（同一楕円に複数描画されるのを防ぐ）
@@ -1788,7 +1878,7 @@ void CNEllipseDetector::ClusterEllipses(vector<Ellipse>& ellipses)
 	float th_Db = 0.1f; // 短軸半径の差分
 	float th_Dr = 0.1f; // 角度の差分
 	float th_Dc_ratio = 0.1f; // 中心間距離
-	float th_Dr_circle = 0.9f; // 長短軸比の差分
+	float th_Dr_circle = 0.9f; // 長短軸比の閾値
 
 	int iNumOfEllipses = int(ellipses.size());
 	if (iNumOfEllipses == 0) return;
@@ -1868,7 +1958,7 @@ void CNEllipseDetector::DrawDetectedEllipses(cv::Mat3b& output, vector<Ellipse>&
 	}
 }
 
-// デバック用？
+// デバック用
 void CNEllipseDetector::showEdgeInPic(cv::Mat1b& I)
 {
 	_szImg = I.size();
@@ -1886,7 +1976,7 @@ void CNEllipseDetector::showEdgeInPic(cv::Mat1b& I)
 	tmp = DP + DN;
 	tmp2 = DTMP - tmp;
 	cv::imshow("DNP", tmp2);
-	cv::imwrite("DPN.jpg", tmp2);
+	cv::imwrite("edges/DPN.jpg", tmp2);
 
 	float t_fMinOrientedRectSide = _fMinOrientedRectSide;
 	_fMinOrientedRectSide = 4;
@@ -1919,11 +2009,11 @@ void CNEllipseDetector::showEdgeInPic(cv::Mat1b& I)
 	imgs[2] = picture3;
 	imgs[3] = picture4; 
 	
-	cv::namedWindow("all arcs", cv::WINDOW_NORMAL);
-	cv::imshow("all arcs", picture5);
+	// cv::namedWindow("all arcs", cv::WINDOW_NORMAL);
+	// cv::imshow("all arcs", picture5);
 	cv::imwrite("arcs.jpg", picture5);
 
-	MultiImage_OneWin("All arcs", imgs, cv::Size(2, 2), cv::Size(400, 800));
+	// MultiImage_OneWin("All arcs", imgs, cv::Size(2, 2), cv::Size(400, 800));
 }
 
 /* ※未使用
@@ -1971,4 +2061,611 @@ int CNEllipseDetector::showEdgeInPic(cv::Mat1b& I,bool showedge)
 	int EdgesNumber = points_1.size() + points_2.size() + points_3.size() + points_4.size();
 
 	return EdgesNumber;
+}
+
+
+
+// 自作、重なる楕円選定（ピクセル単位で判断）
+void CNEllipseDetector::OverlapEllipses(const cv::Size& sz, vector<Ellipse>& ellipses)
+{
+	int iNumOfEllipses = int(ellipses.size());
+    if (iNumOfEllipses <= 1) return;
+
+	vector<Ellipse> overlap;
+    overlap.push_back(ellipses[0]); // 最初の（最高スコアの）楕円は無条件に合格
+	
+	// 楕円描画用のマスクを作成
+	cv::Mat mask1 = cv::Mat::zeros(sz, CV_8UC1);
+    cv::Mat mask2 = cv::Mat::zeros(sz, CV_8UC1);
+    cv::Mat overlapMask = cv::Mat::zeros(sz, CV_8UC1);
+
+	for (int i = 1; i < iNumOfEllipses; ++i) // スコア2番目以降の楕円をチェック
+    {
+        Ellipse& e1 = ellipses[i];
+        bool bFoundOverlap = false;
+
+        mask1.setTo(0);
+        cv::ellipse(mask1,
+                    cv::Point(cvRound(e1._xc), cvRound(e1._yc)), // cvRound : 四捨五入
+                    cv::Size(cvRound(e1._a), cvRound(e1._b)),
+                    e1._rad * 180.0 / CV_PI, 0.0, 360.0,
+                    cv::Scalar(255), -1);
+
+        for (const auto& e2 : overlap) // overlap内のベクトルをe2という名前で順番に取り出すループ（overlap内にはe1より高スコアの楕円しかない）
+        {
+            mask2.setTo(0);
+            cv::ellipse(mask2,
+                        cv::Point(cvRound(e2._xc), cvRound(e2._yc)),
+                        cv::Size(cvRound(e2._a), cvRound(e2._b)),
+                        e2._rad * 180.0 / CV_PI, 0.0, 360.0,
+                        cv::Scalar(255), -1);
+
+            cv::bitwise_and(mask1, mask2, overlapMask); // 2つのマスクの重なりを抽出
+
+            if (cv::countNonZero(overlapMask) > 0)
+            {
+                bFoundOverlap = true;
+                break;
+            }
+        }
+
+        if (!bFoundOverlap)
+        {
+            overlap.push_back(e1);
+        }
+    }
+
+    overlap.swap(ellipses);
+};
+
+// 自作、重なる楕円選定（矩形の重なりで判断したが楕円が消えまくる）
+/*
+void CNEllipseDetector::OverlapEllipses(vector<Ellipse>& ellipses)
+{
+	int iNumOfEllipses = int(ellipses.size());
+    if (iNumOfEllipses <= 1) return;
+
+    vector<Ellipse> overlap;
+    overlap.push_back(ellipses[0]); // 最初の（最高スコアの）楕円は無条件に合格
+
+	bool bFoundOverlap = false;
+
+    for (int i = 1; i < iNumOfEllipses; ++i)
+    {
+        Ellipse& e1 = ellipses[i];
+
+		int sz_overlap = int(overlap.size());
+        cv::RotatedRect Rect1(cv::Point2f(e1._xc, e1._yc), cv::Size2f(e1._a * 2.0f, e1._b * 2.0f), e1._rad * 180.0f / CV_PI);
+
+        for (int j = 0; j < sz_overlap; ++j)
+        {
+			Ellipse& e2 = overlap[j];
+
+            cv::RotatedRect Rect2(cv::Point2f(e2._xc, e2._yc), cv::Size2f(e2._a * 2.0f, e2._b * 2.0f), e2._rad * 180.0f / CV_PI);
+
+            vector<cv::Point2f> intersectionPoints;
+            int intersectionType = cv::rotatedRectangleIntersection(Rect1, Rect2, intersectionPoints);
+
+            if (intersectionType != cv::INTERSECT_NONE)
+            {
+                bFoundOverlap = true;
+                break;
+            }
+        }
+
+        if (!bFoundOverlap)
+        {
+            overlap.push_back(e1);
+        }
+    }
+
+    overlap.swap(ellipses);
+};
+*/
+
+// 自作、楕円の選定（極端な楕円の削除）
+void CNEllipseDetector::DeleteEllipses(vector<Ellipse>& ellipses)
+{
+	int iNumOfEllipses = int(ellipses.size());
+	int half = iNumOfEllipses / 2;
+	if (iNumOfEllipses == 0) return;
+
+	vector<float> fA(iNumOfEllipses);
+
+	for (int i = 0; i < iNumOfEllipses; i++)
+	{
+		fA[i] = ellipses[i]._a;
+	}
+
+	// 長軸長さaの中央値を取得
+	nth_element(fA.begin(), fA.begin() + half, fA.end());
+	float med_a = fA[half];
+
+	float th_a = 4.0f;  // 中央値より4倍以上の長軸を削除
+	float th_ba = 0.7f; // 長短軸比0.8未満は削除
+
+	vector<Ellipse> noDelete;
+	for (int i = 0; i < iNumOfEllipses; i++)
+	{
+		Ellipse& ell = ellipses[i]; // チェック対象
+		float a_e = ell._a;
+		float ba_e = ell._b / ell._a;
+
+		if (a_e > med_a * th_a)
+		{
+			continue;
+		}
+
+		if (ba_e < th_ba)
+		{
+			continue;
+		}
+
+		noDelete.push_back(ell);
+	}
+
+	noDelete.swap(ellipses);
+}
+
+// 自作、ダブレットの場合の楕円探索
+void CNEllipseDetector::FindEllipses2(VP& edge_ij, vector<Ellipse>& ellipses)
+{
+	size_t sz_ij = edge_ij.size();
+	cv::RotatedRect fit_ell = cv::fitEllipse(edge_ij);
+
+	cv::Point2f center = fit_ell.center;
+	float xc = center.x;
+	float yc = center.y;
+	float width = fit_ell.size.width / 2.0f;
+	float height = fit_ell.size.height / 2.0f;
+	float fA = max(width, height);
+	float fB = min(width, height);
+	float angle_deg = fit_ell.angle;
+	if (width < height) {angle_deg += 90.0f;}
+	float rho = fmod((angle_deg * CV_PI / 180.0f) + 2.0 * CV_PI, CV_PI);
+
+	Ellipse ell(xc, yc, fA, fB, rho);
+	
+	float _cos = cos(-ell._rad);
+	float _sin = sin(-ell._rad);
+	float invA2 = 1.f / (ell._a * ell._a);
+	float invB2 = 1.f / (ell._b * ell._b);
+	float invNofPoints = 1.f / float(sz_ij);
+	int counter_on_perimeter = 0;
+
+	for (ushort l = 0; l < sz_ij; ++l)
+	{
+		float tx = float(edge_ij[l].x) - ell._xc;         // 楕円の中心を原点に
+		float ty = float(edge_ij[l].y) - ell._yc;
+		float rx = (tx * _cos - ty * _sin);              // 楕円の傾きを打ち消すを方向に回転
+		float ry = (tx * _sin + ty * _cos);
+
+		float h = (rx * rx) * invA2 + (ry * ry) * invB2; // 楕円の方程式
+		if (abs(h - 1.f) < _fDistanceToEllipseContour)   // ピクセルが輪郭上にあれば、h=1になるはず（fDistanceToEllipseContour = 0.1f）
+		{
+			++counter_on_perimeter;
+		}
+	}
+
+	if (counter_on_perimeter <= 0)
+	{
+		Toc(4); //validation
+		return;
+	}
+
+	// 閾値判定、fMinScore以上あればおｋ
+	float score = float(counter_on_perimeter) * invNofPoints;
+	if (score < _fMinScore)
+	{
+		Toc(4); //validation
+		return;
+	}
+
+	// 小さい円弧からスケールの大きい楕円推定を抑制
+	float C = CV_PI * (3.0f * (ell._a + ell._b) - sqrt((3.0f * ell._a + ell._b) * (ell._a + 3.0f * ell._b))); // ラマヌジャンの第2近似式
+	float rel = counter_on_perimeter / C;
+	if (rel < _fMinReliability)
+	{
+		Toc(4); //validation
+		return;
+	}
+
+	ell._score = (score + rel) * 0.5f;
+	ellipses.push_back(ell);
+	Toc(4);
+}
+
+// 順番合ってるかわからん
+#define D12 pjf,pjm,pjl,pif,pim,pil
+#define D23 pil,pim,pif,pjf,pjm,pjl
+#define D34 pif,pim,pil,pjf,pjm,pjl
+#define D41 pif,pim,pil,pjl,pjm,pjf
+#define D13 pif,pim,pil,pjf,pjm,pjl
+#define D24 pil,pim,pif,pjf,pjm,pjl
+
+// 自作、ダブレット
+void CNEllipseDetector::Doublets12(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses)
+{
+	ushort sz_i = ushort(pi.size());
+	ushort sz_j = ushort(pj.size());
+
+	for (ushort i = 0; i < sz_i; ++i)
+	{
+		VP& edge_i = pi[i];
+		ushort sz_ei = ushort(edge_i.size());
+
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei / 2];
+		cv::Point& pil = edge_i[sz_ei - 1];
+
+		VP rev_i(edge_i.size());
+		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin()); // 円弧iを逆順にしたものをrev_iに格納
+
+		for (ushort j = 0; j < sz_j; ++j)
+		{
+			VP& edge_j = pj[j];
+			ushort sz_ej = ushort(edge_j.size());
+
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej / 2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
+
+#ifndef DISCARD_CONSTRAINT_POSITION // 円弧が正しい位置関係にあるか判定（円弧iの始点xが円弧jの終点xよりも大きいはず）
+			if (pjl.x > pif.x + _fThPosition) // _fThPosition = 1.0 はピクセルの許容誤差
+			{
+				continue;
+			}
+#endif
+
+#ifndef DISCARD_CONSTRAINT_CNC // value4SixPointsは円弧から得られる不変量で、この値がほとんど変わらなければ同一円弧とみなす。詳細はtools.cpp参照
+			if(myselect1 && fabs(value4SixPoints(D12) - 1) > tCNC) // tCNC = 0.3　→　不変量が1.3以上なら違う円弧とみなしてcontinue
+			{
+				continue;
+			}
+#endif
+			uint key_ij = GenerateKey(PAIR_12, i, j);
+			EllipseData data_ij;
+
+			if (data.count(key_ij) == 0) // keyに登録されているかどうか
+			{
+				GetFastCenter(edge_j, rev_i, data_ij);
+				data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+			}
+			else
+			{
+				data_ij = data.at(key_ij);
+			}
+
+			if (!data_ij.isValid)
+			{
+				continue;
+			}
+
+			// ペア判定となったエッジi, jを統合
+			VP edge_ij = edge_i;
+			edge_ij.insert(edge_ij.end(), edge_j.begin(), edge_j.end());
+
+			// Find remaining paramters (A,B,rho)
+			FindEllipses2(edge_ij, ellipses);
+		}
+	}
+}
+
+void CNEllipseDetector::Doublets23(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses)
+{
+	ushort sz_i = ushort(pi.size());
+	ushort sz_j = ushort(pj.size());
+
+	for (ushort i = 0; i < sz_i; ++i)
+	{
+		VP& edge_i = pi[i];
+		ushort sz_ei = ushort(edge_i.size());
+
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei / 2];
+		cv::Point& pil = edge_i[sz_ei - 1];
+
+		VP rev_i(edge_i.size());
+		reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
+
+		for (ushort j = 0; j < sz_j; ++j)
+		{
+			VP& edge_j = pj[j];
+			ushort sz_ej = ushort(edge_j.size());
+
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej / 2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
+
+			VP rev_j(edge_j.size());
+			reverse_copy(edge_j.begin(), edge_j.end(), rev_j.begin());
+
+#ifndef DISCARD_CONSTRAINT_POSITION
+			if (pjf.y < pif.y - _fThPosition)
+			{
+				continue;
+			}
+#endif
+
+#ifndef DISCARD_CONSTRAINT_CNC
+			if(myselect1 && fabs(value4SixPoints(D23) - 1) > tCNC)
+			{
+				continue;
+			}
+#endif
+			uint key_ij = GenerateKey(PAIR_23, i, j);
+			EllipseData data_ij;
+
+			if (data.count(key_ij) == 0)
+			{
+				GetFastCenter(rev_i, rev_j, data_ij);
+				data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+			}
+			else
+			{
+				data_ij = data.at(key_ij);
+			}
+
+			if (!data_ij.isValid)
+			{
+				continue;
+			}
+
+			VP edge_ij = edge_i;
+			edge_ij.insert(edge_ij.end(), edge_j.begin(), edge_j.end());
+
+			FindEllipses2(edge_ij, ellipses);
+		}
+	}
+}
+
+void CNEllipseDetector::Doublets34(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses)
+{
+	ushort sz_i = ushort(pi.size());
+	ushort sz_j = ushort(pj.size());
+
+	for (ushort i = 0; i < sz_i; ++i)
+	{
+		VP& edge_i = pi[i];
+		ushort sz_ei = ushort(edge_i.size());
+
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei / 2];
+		cv::Point& pil = edge_i[sz_ei - 1];
+
+		for (ushort j = 0; j < sz_j; ++j)
+		{
+			VP& edge_j = pj[j];
+			ushort sz_ej = ushort(edge_j.size());
+
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej / 2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
+
+			VP rev_j(edge_j.size());
+			reverse_copy(edge_j.begin(), edge_j.end(), rev_j.begin());
+
+#ifndef DISCARD_CONSTRAINT_POSITION
+			if (pjf.x < pil.x - _fThPosition)
+			{
+				continue;
+			}
+#endif
+
+#ifndef DISCARD_CONSTRAINT_CNC
+			if(myselect1 && fabs(value4SixPoints(D34) - 1) > tCNC)
+			{
+				continue;
+			}
+#endif
+			uint key_ij = GenerateKey(PAIR_34, i, j);
+			EllipseData data_ij;
+
+			if (data.count(key_ij) == 0)
+			{
+				GetFastCenter(edge_i, rev_j, data_ij);
+				data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+			}
+			else
+			{
+				data_ij = data.at(key_ij);
+			}
+
+			if (!data_ij.isValid)
+			{
+				continue;
+			}
+
+			VP edge_ij = edge_i;
+			edge_ij.insert(edge_ij.end(), edge_j.begin(), edge_j.end());
+
+			FindEllipses2(edge_ij, ellipses);
+		}
+	}
+}
+
+void CNEllipseDetector::Doublets41(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses)
+{
+	ushort sz_i = ushort(pi.size());
+	ushort sz_j = ushort(pj.size());
+
+	for (ushort i = 0; i < sz_i; ++i)
+	{
+		VP& edge_i = pi[i];
+		ushort sz_ei = ushort(edge_i.size());
+
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei / 2];
+		cv::Point& pil = edge_i[sz_ei - 1];
+
+		for (ushort j = 0; j < sz_j; ++j)
+		{
+			VP& edge_j = pj[j];
+			ushort sz_ej = ushort(edge_j.size());
+
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej / 2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
+
+#ifndef DISCARD_CONSTRAINT_POSITION
+			if (pjl.y > pil.y + _fThPosition)
+			{
+				continue;
+			}
+#endif
+
+#ifndef DISCARD_CONSTRAINT_CNC
+			if(myselect1 && fabs(value4SixPoints(D41) - 1) > tCNC)
+			{
+				continue;
+			}
+#endif
+			uint key_ij = GenerateKey(PAIR_14, i, j);
+			EllipseData data_ij;
+
+			if (data.count(key_ij) == 0)
+			{
+				GetFastCenter(edge_i, edge_j, data_ij);
+				data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+			}
+			else
+			{
+				data_ij = data.at(key_ij);
+			}
+
+			if (!data_ij.isValid)
+			{
+				continue;
+			}
+
+			VP edge_ij = edge_i;
+			edge_ij.insert(edge_ij.end(), edge_j.begin(), edge_j.end());
+
+			FindEllipses2(edge_ij, ellipses);
+		}
+	}
+}
+
+void CNEllipseDetector::Doublets13(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses)
+{
+	ushort sz_i = ushort(pi.size());
+	ushort sz_j = ushort(pj.size());
+
+	for (ushort i = 0; i < sz_i; ++i)
+	{
+		VP& edge_i = pi[i];
+		ushort sz_ei = ushort(edge_i.size());
+
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei / 2];
+		cv::Point& pil = edge_i[sz_ei - 1];
+
+		for (ushort j = 0; j < sz_j; ++j)
+		{
+			VP& edge_j = pj[j];
+			ushort sz_ej = ushort(edge_j.size());
+
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej / 2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
+
+#ifndef DISCARD_CONSTRAINT_POSITION
+			if (pjf.x > pil.x || pif.y > pjl.y)
+			{
+				continue;
+			}
+#endif
+
+#ifndef DISCARD_CONSTRAINT_CNC
+			if(myselect1 && fabs(value4SixPoints(D13) - 1) > tCNC)
+			{
+				continue;
+			}
+#endif
+			uint key_ij = GenerateKey(PAIR_13, i, j);
+			EllipseData data_ij;
+
+			if (data.count(key_ij) == 0)
+			{
+				GetFastCenter(edge_i, edge_j, data_ij);
+				data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+			}
+			else
+			{
+				data_ij = data.at(key_ij);
+			}
+
+			if (!data_ij.isValid)
+			{
+				continue;
+			}
+
+			VP edge_ij = edge_i;
+			edge_ij.insert(edge_ij.end(), edge_j.begin(), edge_j.end());
+
+			FindEllipses2(edge_ij, ellipses);
+		}
+	}
+}
+
+void CNEllipseDetector::Doublets24(VVP& pi, VVP& pj, unordered_map<uint, EllipseData>& data, vector<Ellipse>& ellipses)
+{
+	ushort sz_i = ushort(pi.size());
+	ushort sz_j = ushort(pj.size());
+
+	for (ushort i = 0; i < sz_i; ++i)
+	{
+		VP& edge_i = pi[i];
+		ushort sz_ei = ushort(edge_i.size());
+
+		cv::Point& pif = edge_i[0];
+		cv::Point& pim = edge_i[sz_ei / 2];
+		cv::Point& pil = edge_i[sz_ei - 1];
+
+		for (ushort j = 0; j < sz_j; ++j)
+		{
+			VP& edge_j = pj[j];
+			ushort sz_ej = ushort(edge_j.size());
+
+			cv::Point& pjf = edge_j[0];
+			cv::Point& pjm = edge_j[sz_ej / 2];
+			cv::Point& pjl = edge_j[sz_ej - 1];
+
+#ifndef DISCARD_CONSTRAINT_POSITION
+			if (pif.x > pjl.x || pil.y > pjf.y)
+			{
+				continue;
+			}
+#endif
+
+#ifndef DISCARD_CONSTRAINT_CNC
+			if(myselect1 && fabs(value4SixPoints(D24) - 1) > tCNC)
+			{
+				continue;
+			}
+#endif
+			uint key_ij = GenerateKey(PAIR_24, i, j);
+			EllipseData data_ij;
+
+			if (data.count(key_ij) == 0)
+			{
+				GetFastCenter(edge_i, edge_j, data_ij);
+				data.insert(pair<uint, EllipseData>(key_ij, data_ij));
+			}
+			else
+			{
+				data_ij = data.at(key_ij);
+			}
+
+			if (!data_ij.isValid)
+			{
+				continue;
+			}
+
+			VP edge_ij = edge_i;
+			edge_ij.insert(edge_ij.end(), edge_j.begin(), edge_j.end());
+
+			FindEllipses2(edge_ij, ellipses);
+		}
+	}
 }

@@ -29,7 +29,7 @@ void Canny_v3(	cv::InputArray image, cv::OutputArray edges,
 {
     cv::Mat src = image.getMat();
 
-    // Sobelフィルタで勾配を計算
+    // Sobelフィルタで勾配を計算（apertureSizeはSobelフィルタのカーネルサイズ、3）
     cv::Mat dx, dy;
     cv::Sobel(src, dx, CV_16S, 1, 0, apertureSize);
     cv::Sobel(src, dy, CV_16S, 0, 1, apertureSize);
@@ -74,6 +74,8 @@ void Canny_v3(	cv::InputArray image, cv::OutputArray edges,
     // 下限閾値(low_thresh)を決定
     int low_thresh = static_cast<int>(high_thresh * threshold_ratio);
 
+	cout << high_thresh << endl << low_thresh << endl;
+
     // 計算した閾値を使って標準Canny関数を呼び出す
     cv::Canny(src, edges, low_thresh, high_thresh, apertureSize, L2gradient);
 
@@ -104,7 +106,7 @@ void Labeling(cv::Mat1b& image, vector<vector<cv::Point>>& segments, int iMinLen
     segments.clear();
     for (int i = 1; i < num_labels; ++i)
 	{
-        if (stats.at<int>(i, cv::CC_STAT_AREA) >= iMinLength)
+        if (stats.at<int>(i, cv::CC_STAT_AREA) >= iMinLength) // iMinLengthよりも小さいピクセル数で構成されるエッジは削除（main.cppでThLength = 16として定義、名前変わってる）
 		{
             segments.push_back(temp_segments[i - 1]);
         }

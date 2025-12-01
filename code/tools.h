@@ -47,7 +47,11 @@ float Evaluate(const vector<Ellipse>& ellGT, const vector<Ellipse>& ellTest, con
 void salt(cv::Mat& image, int n);
 
 // エッジ描画
-void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture);
+void showEdge(vector<vector<cv::Point>> points_, cv::Mat& picture); // 白
+void showEdge1(vector<vector<cv::Point>> points_, cv::Mat& picture); // 赤
+void showEdge2(vector<vector<cv::Point>> points_, cv::Mat& picture); // 青
+void showEdge3(vector<vector<cv::Point>> points_, cv::Mat& picture); // 黄
+void showEdge4(vector<vector<cv::Point>> points_, cv::Mat& picture); // 緑 
 
 // ファイルの書き込み、読み込み、トリム
 int writeFile(string fileName_cpp, vector<string> vsContent);
