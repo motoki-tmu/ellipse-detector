@@ -3,4 +3,4 @@ Fornaciari, M., Prati, A., cucchiara, R., “A fast and effective ellipse detect
 https://github.com/dlut-dimt/ellipse-detector/
 
 code ~2025/12\
-code_rev ~2026/03\
+code_rev ~2026/03
