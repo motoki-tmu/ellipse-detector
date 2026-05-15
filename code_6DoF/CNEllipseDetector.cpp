@@ -78,8 +78,6 @@ void CNEllipseDetector::SetParameters(	cv::Size GaussKernelSize,
 // 画像の平滑化、エッジ検出、勾配計算
 void CNEllipseDetector::PreProcessing(cv::Mat1b& I, cv::Mat1b& DP, cv::Mat1b& DN) // 入力：I（グレースケール画像）、出力：DP（tanθ>0）、DN（tanθ<0）（それぞれサイズは入力と同じ、傾きに応じたエッジのみ描かれた画像に別れる）
 {
-	Tic(0); //edge detection
-
 	cv::GaussianBlur(I, I, _GaussKernelSize, _GaussSigma); // ガウシアンフィルタ
 
 	cv::Mat1b E;				//edge mask
@@ -89,11 +87,7 @@ void CNEllipseDetector::PreProcessing(cv::Mat1b& I, cv::Mat1b& DP, cv::Mat1b& DN
 	Canny_v2(I, E, DX, DY, _CannyHighTh, _CannyLowTh, 3, false); // I:入力画像、E:エッジ画像、DX,DY:勾配
 	// Canny_v3(I, E, DX, DY, 3, false);
 
-	cv::imwrite("edges/canny.png", E);
-
-	Toc(0); //edge detection
-
-	Tac(1); //preprocessing
+	//cv::imwrite("edges/canny.png", E);
 
 	// For each edge points, compute the edge direction
 	for (int i = 0; i < _szImg.height; ++i)
@@ -115,7 +109,6 @@ void CNEllipseDetector::PreProcessing(cv::Mat1b& I, cv::Mat1b& DP, cv::Mat1b& DN
 			}
 		}
 	}
-	Toc(1); //preprocessing
 };
 
 #define	DISCARD_TCN1
@@ -733,8 +726,6 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 	memset(accR, 0, sizeof(int) * ACC_R_SIZE); // 傾き
 	memset(accA, 0, sizeof(int) * ACC_A_SIZE); // 長軸長さ
 
-	Tac(3); // 実行時間（estimation）の計算
-
 	// 弦の傾きを格納したベクトルのサイズ計算
 	int sz_ij1 = int(data_ij.Sa.size());
 	int sz_ij2 = int(data_ij.Sb.size());
@@ -990,9 +981,6 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 	// Got all ellipse parameters!
 	Ellipse ell(a0, b0, fA, fB, fmod(rho + float(CV_PI) * 2.f, float(CV_PI))); // Ellipse型のell配列を定義（_xc, _yc, _a, _b, _rad, _score）
 
-	Toc(3); //estimation
-	Tac(4); //validation
-
 	// Get the score. See Sect [3.3.1] in the paper
 	// ピクセルが楕円の輪郭上にあるかチェック
 	float _cos = cos(-ell._rad);
@@ -1049,7 +1037,6 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 	//no points found on the ellipse
 	if (counter_on_perimeter <= 0)
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1057,7 +1044,6 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 	float pre = float(counter_on_perimeter) * invNofPoints; // MinPrecision以上のピクセルが楕円の輪郭上にあればOK
 	if (pre < _MinPrecision) // MinPrecision = 0.7
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1106,7 +1092,6 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 	float rel = counter_on_perimeter / C; // 円周近似は3(a+b)でも可
 	if (rel < _MinReliability)
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1118,8 +1103,6 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 
 	// The tentative detection has been confirmed. Save it!
 	ellipses.push_back(ell);
-
-	Toc(4); // Validation
 };
 
 #define T124 pjf,pjm,pjl,pif,pim,pil
@@ -1633,7 +1616,6 @@ void CNEllipseDetector::FindEllipses2(VP& edge_ij, std::vector<Ellipse>& ellipse
 
 	if (counter_on_perimeter <= 0)
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1641,7 +1623,6 @@ void CNEllipseDetector::FindEllipses2(VP& edge_ij, std::vector<Ellipse>& ellipse
 	float pre = float(counter_on_perimeter) * invNofPoints;
 	if (pre < _MinPrecision)
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1650,14 +1631,12 @@ void CNEllipseDetector::FindEllipses2(VP& edge_ij, std::vector<Ellipse>& ellipse
 	float rel = counter_on_perimeter / C;
 	if (rel < _MinReliability)
 	{
-		Toc(4); //validation
 		return;
 	}
 
 	ell._score = pre * _ScoreAlpha + rel * (1.0 - _ScoreAlpha);
 	//ell._score = 2 * pre * rel / (pre + rel);
 	ellipses.push_back(ell);
-	Toc(4);
 }
 
 // 円弧2つの場合の楕円探索（Tripletsと同じ幾何計算）
@@ -1669,8 +1648,6 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 	memset(accN, 0, sizeof(int) * ACC_N_SIZE); // 長短軸比B/A
 	memset(accR, 0, sizeof(int) * ACC_R_SIZE); // 傾き
 	memset(accA, 0, sizeof(int) * ACC_A_SIZE); // 長軸長さ
-
-	Tac(3); // 実行時間（estimation）の計算
 
 	// 弦の傾きを格納したベクトルのサイズ計算
 	int sz_ij1 = int(data_ij.Sa.size());
@@ -1782,9 +1759,6 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 	// Got all ellipse parameters!
 	Ellipse ell(a0, b0, fA, fB, fmod(rho + float(CV_PI) * 2.f, float(CV_PI))); // Ellipse型のell配列を定義（_xc, _yc, _a, _b, _rad, _score）
 
-	Toc(3); //estimation
-	Tac(4); //validation
-
 	// Get the score. See Sect [3.3.1] in the paper
 	// ピクセルが楕円の輪郭上にあるかチェック
 	float _cos = cos(-ell._rad);
@@ -1827,7 +1801,6 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 	//no points found on the ellipse
 	if (counter_on_perimeter <= 0)
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1835,7 +1808,6 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 	float pre = float(counter_on_perimeter) * invNofPoints; // MinPrecision以上のピクセルが楕円の輪郭上にあればOK
 	if (pre < _MinPrecision) // MinPrecision = 0.7
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1873,7 +1845,6 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 	float rel = counter_on_perimeter / C; // 円周近似は3(a+b)でも可
 	if (rel < _MinReliability)
 	{
-		Toc(4); //validation
 		return;
 	}
 
@@ -1885,8 +1856,6 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 
 	// The tentative detection has been confirmed. Save it!
 	ellipses.push_back(ell);
-
-	Toc(4); // Validation
 }
 
 // 順番合ってるかわからん
@@ -2477,7 +2446,6 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 {
 	countsOfFindEllipse = 0;
 	countsOfGetFastCenter = 0;
-	Tic(1); //prepare data structure
 
 	_szImg = I.size(); // 入力画像サイズ取得
 
@@ -2501,16 +2469,12 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	// キャッシュ用意
 	std::unordered_map<uint, EllipseData> centers;
 
-	Toc(1); //prepare data structure
-
 	// 入力画像Iのエッジ検出、勾配計算によるDPとDNの分類
 	PreProcessing(I, DP, DN);
 
 	// canny法によるエッジ画像保存
 	cv::Mat1b canny	= DP + DN;	
 	cv::imwrite("result/canny.png", canny);
-
-	Tac(1); //preprocessing
 
 	// 途中経過の楕円を描画するための用意
 	cv::Mat grayImage = I.clone();
@@ -2522,6 +2486,7 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	DetectEdges24(DN, points_2, points_4);
 
 	// ノイズ・直線除去後のエッジ画像保存
+
 	cv::Mat picture(_szImg, CV_8UC3, cv::Scalar(0, 0, 0));
 	cv::Mat picture_white(_szImg, CV_8UC3, cv::Scalar(255, 255, 255));
 	std::vector<cv::Mat> imgs(4);
@@ -2551,12 +2516,9 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	imgs[2] = picture3;
 	imgs[3] = picture4; 
 
-	cv::imwrite("result/curveture.png", picture5);
+	//cv::imwrite("result/curveture.png", picture5);
 	cv::imwrite("result/curveture_4.png", picture6);
-
-	Toc(1); //preprocessing
-
-	Tic(2); //grouping
+	
 
 	// トリプレットにより楕円パラメータ確定
 	
@@ -2577,39 +2539,33 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	
 
 	// Doublets後の楕円描画
+	
 	int sz_Doublets = ellipses.size();
 	std::cout << "sz_Doublets: " << sz_Doublets << std::endl;
 	cv::Mat3b debugImage1 = colorImage.clone();
 	DrawDetectedEllipses(debugImage1, ellipses, 0, 2);
 	cv::imwrite("result/debug1.png", debugImage1);
-
-	Toc(2); //grouping	
-
-	_times[2] -= (_times[3] + _times[4]); // time estimation, validation inside
-
-	Tac(4); //validation
+	
 
 	// 楕円をスコア順に並べ替え
 	sort(ellipses.begin(), ellipses.end());
-
-	Toc(4); //validation
 
 	// Free accumulator memory
 	delete[] accN;
 	delete[] accR;
 	delete[] accA;
 
-	Tic(5);
-
 	// 自作、極端な楕円削除
 	//DeleteEllipses(ellipses);
 
 	// DeleteEllipses後の楕円描画
+	
 	int sz_Delete = ellipses.size();
 	std::cout << "sz_Delete: " << sz_Delete << std::endl;
 	cv::Mat3b debugImage2 = colorImage.clone();
 	DrawDetectedEllipses(debugImage2, ellipses, 0, 2);
 	cv::imwrite("result/debug2.png", debugImage2);
+	
 	
 
 	// 自作、重なる楕円削除
@@ -2626,8 +2582,6 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	DrawDetectedEllipses(debugImage3, ellipses, 0, 2);
 	cv::imwrite("result/debug3.png", debugImage3);
 	*/
-
-	Toc(5);
 };
 
 // 楕円を描画

@@ -40,21 +40,21 @@ class CNEllipseDetector
 {
 	/* パラメータ */
 
-	cv::Size _GaussKernelSize;     // ガウシアンフィルタのカーネルサイズ
-	double   _GaussSigma;          // ガウシアンフィルタのsigma
-	double 	 _CannyHighTh;         // Canny法の閾値
-	double 	 _CannyLowTh;		   // Canny法の閾値
-	int		 _MinEdgeLength;	   // エッジの最小必要長さ（短い円弧を除外）
-	float	 _MinRectLength;       // 円弧を囲む矩形の最小辺長（直線を除外）
-	int      _StringNum;		   // 弦の数
-	float    _PositionTh;          // 2つの円弧の位置関係の閾値（大きく離れたペアを除外）
-	float    _V4SPTh;			   // 同一円弧判定
-	float	 _MaxCenterDistance;   // 2つの中心点誤差の閾値
-	float	 _MaxCenterDistance2;  // 上記の2乗値
-	float	 _ContourTh;           // ある点が楕円の輪郭上にあるとみなす閾値
-	float	 _MinPrecision;		   // 楕円の適合率
-	float	 _MinReliability;	   // 楕円の信頼度
-	float 	 _ScoreAlpha;  		   // スコア評価の重みα
+	cv::Size _GaussKernelSize;     // ガウシアンフィルタのカーネルサイズ	PreProcessing
+	double   _GaussSigma;          // ガウシアンフィルタのsigma			   PreProcessing
+	double 	 _CannyHighTh;         // Canny法の閾値						  PreProcessing
+	double 	 _CannyLowTh;		   // Canny法の閾値						  PreProcessing
+	int		 _MinEdgeLength;	   // エッジの最小必要長さ（短い円弧を除外） DetectEdges
+	float	 _MinRectLength;       // 円弧を囲む矩形の最小辺長（直線を除外） DetectEdges
+	int      _StringNum;		   // 弦の数							  GetFastCenter
+	float    _PositionTh;          // 2つの円弧の位置関係の閾値			    Triplets
+	float    _V4SPTh;			   // 同一円弧判定						   Triplets
+	float	 _MaxCenterDistance;   // 2つの中心点誤差の閾値					Triplets
+	float	 _MaxCenterDistance2;  // 上記の2乗値						   Triplets
+	float	 _ContourTh;           // ある点が楕円の輪郭上にあるとみなす閾値  FindEllipses
+	float	 _MinPrecision;		   // 楕円の適合率							FindEllipses
+	float	 _MinReliability;	   // 楕円の信頼度							FindEllipses
+	float 	 _ScoreAlpha;  		   // スコア評価の重みα						FindEllipses
 
 
 	/* 補助変数 */
@@ -129,6 +129,7 @@ private:
 	static const ushort PAIR_13 = 0x04;
 	static const ushort PAIR_24 = 0x05;
 
+	// 時間計測用関数，未使用（mainでcv::TickMeterを使用）
 	void Tic(unsigned idx) //start
 	{
 		_timesHelper[idx] = 0.0;

@@ -87,31 +87,36 @@ DataSet DataLoader()
 int main(int argc, char** argv) // argc = argument count, argv = argument std::vector
 {
 	std::string filename = argv[1];
-	std::vector<double> times;
+	std::vector<cv::TickMeter> times(3);
 	CNEllipseDetector cned;
 
 	cv::Mat3b image = cv::imread(filename);
+
+	// 入力画像の回転
+	cv::rotate(image, image, cv::ROTATE_90_CLOCKWISE);
+	//cv::rotate(image, image, cv::ROTATE_180);
+	//cv::rotate(image, image, cv::ROTATE_90_COUNTERCLOCKWISE);
+	
 	cv::Size sz = image.size();
 	cv::Mat1b gray;
 	cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-
 
 	/* クレータ検出で用いるパラメータ */
 
 	cv::Size GaussKernelSize = cv::Size(5, 5); // 変える必要ない
 	double   GaussSigma      = 1.0;	// 変える必要ない
-	double 	 CannyHighTh     = 60;	// 60
-	double   CannyLowTh      = 20;	// 20
-	int		 MinEdgeLength   = 8;	// 8
-	float	 MinRectLength   = 1.0;	// 1.0
-	int      StringNum       = 16;	// 16
-	float    PositionTh      = 1.0;	// 1.0
-	float    V4SPTh          = 0.5;	// 0.5
+	double 	 CannyHighTh     = 130;	// 60
+	double   CannyLowTh      = 50;	// 20
+	int		 MinEdgeLength   = 16;	// 8
+	float	 MinRectLength   = 2.0;	// 1.0
+	int      StringNum       = 16;	// 多分変えなくてよい
+	float    PositionTh      = 1.0;	// 多分変えなくてよい
+	float    V4SPTh          = 0.5;	// 多分変えなくてよい
 	float	 MaxCenterDistance = sqrt(float(sz.width * sz.width + sz.height * sz.height)) * 0.04;
-	float	 ContourTh       = 0.1;	// 0.1
+	float	 ContourTh       = 0.1;	// 多分変えなくてよい
 	float	 MinPrecision    = 0.1;	// この閾値いらんかも
 	float	 MinReliability  = 0.1; // この閾値いらんかも
-	float 	 ScoreAlpha      = 0.4; // 0.4が最良（大阪学会時）
+	float 	 ScoreAlpha      = 0.0; // 0.4が最良（大阪学会時）
 
 	cned.SetParameters	(	GaussKernelSize,	
 							GaussSigma,		
@@ -131,45 +136,41 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 
 	std::vector<Ellipse> ellsCned;
 	cv::Mat1b gray_clone = gray.clone();
+	times[0].start();
 	cned.Detect(gray_clone, ellsCned);
-	times = cned.GetTimes();
+	times[0].stop();
 
 	DataSet Data = DataLoader();
 	std::vector<MatchPairSet> MatchPair;
+	times[1].start();
 	CraterMatching(ellsCned, Data.model, Data.line_segment, MatchPair);
+	times[1].stop();
 
+	times[2].start();
 	PnP(MatchPair);
+	times[2].stop();
 
+	
 	cv::Mat3b resultImage = image.clone();
 	cned.DrawDetectedEllipses(resultImage, ellsCned);
 	cv::imshow("Cned", resultImage);
 	mkdir("result", 0777);
 	cv::imwrite("result/result.png", resultImage);
 	SaveEllipses("result/result.txt", ellsCned);
+	
 
-	double fmeasure = 0;
-	times.push_back(fmeasure);
-	times.push_back(cned.countsOfFindEllipse);
-	times.push_back(cned.countsOfGetFastCenter);
+	double total_time = 0.0;
+	for (int i = 0; i < 3; i++){total_time += times[i].getTimeMilli();}
 
 	std::cout << "--------------------------------" << std::endl;
 	std::cout << "Execution Time: " << std::endl;
-	std::cout << "Edge Detection: \t" << times[0] << std::endl;
-	std::cout << "Pre processing: \t" << times[1] << std::endl;
-	std::cout << "Grouping:       \t" << times[2] << std::endl;
-	std::cout << "Estimation:     \t" << times[3] << std::endl;
-	std::cout << "Validation:     \t" << times[4] << std::endl;
-	std::cout << "Clustering:     \t" << times[5] << std::endl;
+	std::cout << "Crater Detection: \t" << times[0].getTimeMilli() << std::endl;
+	std::cout << "Crater Matching: \t" << times[1].getTimeMilli() << std::endl;
+	std::cout << "Pose Estimation: \t" << times[2].getTimeMilli() << std::endl;
 	std::cout << "--------------------------------" << std::endl;
-	std::cout << "Total:	         \t" << accumulate(times.begin(), times.begin() + 6, 0.0) << std::endl;
-	std::cout << "F-Measure:      \t" << times[6] << std::endl;
+	std::cout << "Total: \t" << total_time << std::endl;
 	std::cout << "--------------------------------" << std::endl;
-	if (times.size() == 9)
-	{
-		std::cout << "countsOfFindEllipse \t" << times[7] << std::endl;
-		std::cout << "countsOfGetFastCenter \t" << times[8] << std::endl;
-	}
-
+	
 	cv::waitKey(0);
 	cv::destroyAllWindows();
 

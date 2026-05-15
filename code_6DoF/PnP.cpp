@@ -31,9 +31,17 @@ void PnP(std::vector<MatchPairSet>& MatchPair)
     // 回転ベクトルと並進ベクトル 
     cv::Mat rvec, tvec;
 
-    bool success = cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
+    bool success = cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_ITERATIVE);
+    //bool success = cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_EPNP);
+    //bool success = cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_SQPNP);
+    //bool success = cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_IPPE);
+    
+    
     if (success)
     {
+        cv::Mat R;
+        cv::Rodrigues(rvec, R);
+        //tvec = - R.t() * tvec; // カメラの絶対位置を出力するための計算
         std::cout << "estimated_position: " << tvec.at<double>(0) << ", " << tvec.at<double>(1) << ", " << tvec.at<double>(2) << std::endl;
         std::cout << "estimated_attitude: " << rvec.at<double>(0) << ", " << rvec.at<double>(1) << ", " << rvec.at<double>(2) << std::endl;
     }

@@ -27,6 +27,3 @@ int writeFile(std::string fileName_cpp, std::vector<std::string> vsContent);
 
 // Main
 void SaveEllipses(const std::string& fileName, const std::vector<Ellipse>& ellipses);
-
-// Main
-void Trim(std::string &str);
