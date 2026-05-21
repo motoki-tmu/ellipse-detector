@@ -105,8 +105,8 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 
 	cv::Size GaussKernelSize = cv::Size(5, 5); // 変える必要ない
 	double   GaussSigma      = 1.0;	// 変える必要ない
-	double 	 CannyHighTh     = 130;	// 60
-	double   CannyLowTh      = 50;	// 20
+	double 	 CannyHighTh     = 60;	// 60
+	double   CannyLowTh      = 60;	// 20
 	int		 MinEdgeLength   = 16;	// 8
 	float	 MinRectLength   = 2.0;	// 1.0
 	int      StringNum       = 16;	// 多分変えなくてよい
@@ -114,8 +114,8 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 	float    V4SPTh          = 0.5;	// 多分変えなくてよい
 	float	 MaxCenterDistance = sqrt(float(sz.width * sz.width + sz.height * sz.height)) * 0.04;
 	float	 ContourTh       = 0.1;	// 多分変えなくてよい
-	float	 MinPrecision    = 0.1;	// この閾値いらんかも
-	float	 MinReliability  = 0.1; // この閾値いらんかも
+	float	 MinPrecision    = 0.01;	// この閾値いらんかも
+	float	 MinReliability  = 0.01; // この閾値いらんかも
 	float 	 ScoreAlpha      = 0.0; // 0.4が最良（大阪学会時）
 
 	cned.SetParameters	(	GaussKernelSize,	
@@ -135,6 +135,7 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 						);
 
 	std::vector<Ellipse> ellsCned;
+	ResultData resultdata;
 	cv::Mat1b gray_clone = gray.clone();
 	times[0].start();
 	cned.Detect(gray_clone, ellsCned);
@@ -143,11 +144,11 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 	DataSet Data = DataLoader();
 	std::vector<MatchPairSet> MatchPair;
 	times[1].start();
-	CraterMatching(ellsCned, Data.model, Data.line_segment, MatchPair);
+	CraterMatching(ellsCned, Data.model, Data.line_segment, MatchPair, resultdata);
 	times[1].stop();
 
 	times[2].start();
-	PnP(MatchPair);
+	PnP(MatchPair, resultdata);
 	times[2].stop();
 
 	
@@ -156,7 +157,6 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 	cv::imshow("Cned", resultImage);
 	mkdir("result", 0777);
 	cv::imwrite("result/result.png", resultImage);
-	SaveEllipses("result/result.txt", ellsCned);
 	
 
 	double total_time = 0.0;
@@ -171,6 +171,13 @@ int main(int argc, char** argv) // argc = argument count, argv = argument std::v
 	std::cout << "Total: \t" << total_time << std::endl;
 	std::cout << "--------------------------------" << std::endl;
 	
+	resultdata.times[0] = times[0].getTimeMilli();
+	resultdata.times[1] = times[1].getTimeMilli();
+	resultdata.times[2] = times[2].getTimeMilli();
+	resultdata.times[3] = total_time;
+
+	SaveEllipses("result/data.txt", ellsCned, resultdata);
+	std::cout << resultdata.matchingpoints << std::endl;
 	cv::waitKey(0);
 	cv::destroyAllWindows();
 

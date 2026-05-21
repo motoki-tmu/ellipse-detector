@@ -1048,6 +1048,7 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 	}
 
 	// 円弧の長さが楕円の円周に対して短すぎると信頼性が低いと判断（上記の別の論文を参照）
+	/* 使われてない
 	float di, dj, dk;
 	{
 		cv::Point2f p1(float(edge_i[0].x), float(edge_i[0].y)); // 始点
@@ -1086,6 +1087,7 @@ void CNEllipseDetector::FindEllipses(cv::Point2f& center, VP& edge_i, VP& edge_j
 		cv::Point2f r2((p2.x * _cos - p2.y * _sin), (p2.x * _sin + p2.y * _cos));
 		dk = abs(r2.x - r1.x) + abs(r2.y - r1.y);
 	}
+	*/
 
 	// 信頼性判定(reliability)
 	float C = CV_PI * (3.0f * (ell._a + ell._b) - sqrt((3.0f * ell._a + ell._b) * (ell._a + 3.0f * ell._b))); // ラマヌジャンの第2近似式、円周長さ
@@ -1812,6 +1814,7 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 	}
 
 	// 円弧の長さが楕円の円周に対して短すぎると信頼性が低いと判断（上記の別の論文を参照）
+	/* 使われてない
 	float di, dj;
 	{
 		cv::Point2f p1(float(edge_i[0].x), float(edge_i[0].y)); // 始点
@@ -1839,6 +1842,7 @@ void CNEllipseDetector::FindEllipses3(cv::Point2f& center, VP& edge_i, VP& edge_
 		cv::Point2f r2((p2.x * _cos - p2.y * _sin), (p2.x * _sin + p2.y * _cos));
 		dj = abs(r2.x - r1.x) + abs(r2.y - r1.y);
 	}
+	*/
 
 	// 信頼性判定(reliability)
 	float C = CV_PI * (3.0f * (ell._a + ell._b) - sqrt((3.0f * ell._a + ell._b) * (ell._a + 3.0f * ell._b))); // ラマヌジャンの第2近似式、円周長さ
@@ -2499,13 +2503,13 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	showEdge(points_3, picture3);
 	showEdge(points_4, picture4);
 	
-	cv::Mat picture5 = picture.clone(); // エッジ1色
+	cv::Mat3b picture5 = picture.clone(); // エッジ1色
 	showEdge(points_1, picture5);
 	showEdge(points_2, picture5);
 	showEdge(points_3, picture5);
 	showEdge(points_4, picture5);
 
-	cv::Mat picture6 = picture_white.clone(); // エッジ2色
+	cv::Mat3b picture6 = picture_white.clone(); // エッジ2色
 	showEdge_r(points_1, picture6);
 	showEdge_b(points_2, picture6);
 	showEdge_r(points_3, picture6);
@@ -2521,12 +2525,12 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	
 
 	// トリプレットにより楕円パラメータ確定
-	
+	/*
 	Triplets124(points_1, points_2, points_4, centers, ellipses);
 	Triplets231(points_2, points_3, points_1, centers, ellipses);
 	Triplets342(points_3, points_4, points_2, centers, ellipses);
 	Triplets413(points_4, points_1, points_3, centers, ellipses);
-	
+	*/
 
 	// ダブレットにより楕円パラメータ確定
 	
@@ -2539,13 +2543,13 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	
 
 	// Doublets後の楕円描画
-	
+	/*
 	int sz_Doublets = ellipses.size();
 	std::cout << "sz_Doublets: " << sz_Doublets << std::endl;
 	cv::Mat3b debugImage1 = colorImage.clone();
 	DrawDetectedEllipses(debugImage1, ellipses, 0, 2);
 	cv::imwrite("result/debug1.png", debugImage1);
-	
+	*/
 
 	// 楕円をスコア順に並べ替え
 	sort(ellipses.begin(), ellipses.end());
@@ -2559,13 +2563,13 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	//DeleteEllipses(ellipses);
 
 	// DeleteEllipses後の楕円描画
-	
+	/*
 	int sz_Delete = ellipses.size();
 	std::cout << "sz_Delete: " << sz_Delete << std::endl;
 	cv::Mat3b debugImage2 = colorImage.clone();
 	DrawDetectedEllipses(debugImage2, ellipses, 0, 2);
 	cv::imwrite("result/debug2.png", debugImage2);
-	
+	*/
 	
 
 	// 自作、重なる楕円削除
@@ -2582,6 +2586,13 @@ void CNEllipseDetector::Detect(cv::Mat1b& I, std::vector<Ellipse>& ellipses)
 	DrawDetectedEllipses(debugImage3, ellipses, 0, 2);
 	cv::imwrite("result/debug3.png", debugImage3);
 	*/
+
+	// canny画像にellipseを描画
+
+	//DrawDetectedEllipses(picture5, ellipses, 0, 1);
+	//cv::imwrite("result/result2.png", picture5);
+	DrawDetectedEllipses(picture6, ellipses, 0, 1);
+	cv::imwrite("result/result3.png", picture6);
 };
 
 // 楕円を描画

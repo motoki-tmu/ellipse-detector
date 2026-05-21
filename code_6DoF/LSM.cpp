@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <algorithm>
 
-void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, std::vector<std::vector<double>> line_segment, std::vector<MatchPairSet>& MatchPair) 
+void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, std::vector<std::vector<double>> line_segment, std::vector<MatchPairSet>& MatchPair, ResultData& resultdata) 
 {
     // ハッシュテーブルを作成(キー値は線分の長さの10の位，要素は線分の管理番号)
 	static const std::unordered_multimap<int, int> line_length = []()
@@ -140,7 +140,7 @@ void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, st
     int count = 0;
 
     // worldで作成する線分はスコア上位p点のみでループ
-    int p = 2;
+    int p = 4;
     for (int a = 0; a < p; a++)
     {
         for (int b = a + 1; b < p; b++)
@@ -244,8 +244,8 @@ void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, st
         std::cout << "deltatheta: " << best_deltatheta << std::endl;
         std::cout << "scale: " << best_s << std::endl;
         std::cout << "estimated result: " << estimate_m_x << ", " << estimate_m_y << std::endl;
-		std::cout << "best_match_size: " << best_match.size() << std::endl;
-        std::cout << "count: " << count << std::endl;
+		//std::cout << "best_match_size: " << best_match.size() << std::endl;
+        //std::cout << "count: " << count << std::endl;
 
 		/*
 		for (size_t i = 0; i < best_match.size(); i++)
@@ -259,4 +259,10 @@ void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, st
     {
         std::cout << "unestimable" << std::endl;
     }
+
+    resultdata.matchingpoints = best + 2;
+    resultdata.deltatheta = best_deltatheta;
+    resultdata.scale = best_s;
+    resultdata.LSMposition[0] = estimate_m_x;
+    resultdata.LSMposition[1] = estimate_m_y;
 }

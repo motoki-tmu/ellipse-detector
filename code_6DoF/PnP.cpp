@@ -3,7 +3,7 @@
 #include <vector>
 #include <cmath>
 
-void PnP(std::vector<MatchPairSet>& MatchPair)
+void PnP(std::vector<MatchPairSet>& MatchPair, ResultData& resultdata)
 {
     std::vector<cv::Point3f> objectPoints;
     std::vector<cv::Point2f> imagePoints;
@@ -13,6 +13,8 @@ void PnP(std::vector<MatchPairSet>& MatchPair)
         objectPoints.push_back(cv::Point3f(MatchPair[i].model_pt.x, MatchPair[i].model_pt.y, 0.0f)); // 模擬月面のクレータが同一平面上にあると仮定
         imagePoints.push_back(cv::Point2f(MatchPair[i].world_pt.x, MatchPair[i].world_pt.y));
     }
+
+    if (objectPoints.size() < 4) return;
 
     // カメラ内部パラメータ（Logicool 720p）
     double FOV_rad = 30.0 * M_PI / 180.0;           // 水平視野角60degなら
@@ -46,4 +48,11 @@ void PnP(std::vector<MatchPairSet>& MatchPair)
         std::cout << "estimated_attitude: " << rvec.at<double>(0) << ", " << rvec.at<double>(1) << ", " << rvec.at<double>(2) << std::endl;
     }
     else {std::cout << "PnP false" << std::endl;}
+
+    resultdata.PnPposition[0] = tvec.at<double>(0);
+    resultdata.PnPposition[1] = tvec.at<double>(1);
+    resultdata.PnPposition[2] = tvec.at<double>(2);
+    resultdata.PnPattitude[0] = rvec.at<double>(0);
+    resultdata.PnPattitude[1] = rvec.at<double>(1);
+    resultdata.PnPattitude[2] = rvec.at<double>(2);
 }

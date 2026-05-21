@@ -1,4 +1,5 @@
 #pragma once
+#include "tools.h"
 #include "common.h"
 #include <vector> 
 
@@ -9,4 +10,4 @@ struct point{double x; double y;};
 struct DataSet{std::vector<point> model; std::vector<std::vector<double>> line_segment;};
 struct MatchPairSet{point world_pt; point model_pt;};
 
-void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, std::vector<std::vector<double>> line_segment, std::vector<MatchPairSet>& MatchPair);
+void CraterMatching(std::vector<Ellipse>& ellipses, std::vector<point> model, std::vector<std::vector<double>> line_segment, std::vector<MatchPairSet>& MatchPair, ResultData& resultdata);

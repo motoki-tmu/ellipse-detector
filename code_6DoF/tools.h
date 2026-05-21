@@ -6,6 +6,18 @@
 
 #define V2SP cv::Point2f p3, cv::Point2f p2, cv::Point2f p1, cv::Point2f p4, cv::Point2f p5, cv::Point2f p6
 
+// ResultData構造体の定義
+struct ResultData
+{
+    int matchingpoints;
+    float deltatheta;
+    float scale;
+    double LSMposition[2];
+    double PnPposition[3];
+    double PnPattitude[3];
+    double times[4];
+};
+
 // .value4SixPoints
 cv::Point2f lineCrossPoint(cv::Point2f l1p1, cv::Point2f l1p2, cv::Point2f l2p1, cv::Point2f l2p2);
 
@@ -26,4 +38,4 @@ void showEdge_g(VVP points_, cv::Mat& picture);
 int writeFile(std::string fileName_cpp, std::vector<std::string> vsContent);
 
 // Main
-void SaveEllipses(const std::string& fileName, const std::vector<Ellipse>& ellipses);
+void SaveEllipses(const std::string& fileName, const std::vector<Ellipse>& ellipses, ResultData& resultdata);

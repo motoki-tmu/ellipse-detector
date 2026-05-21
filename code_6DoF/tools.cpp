@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 #include <math.h>
 #include <time.h>
 #include <dirent.h>
@@ -210,28 +211,62 @@ int writeFile(std::string fileName_cpp, std::vector<std::string> vsContent)
 	return 1;
 }
 
-// 検出した楕円のパラメータを保存
-void SaveEllipses(const std::string& fileName, const std::vector<Ellipse>& ellipses)
+// いろんな結果を保存
+void SaveEllipses(const std::string& fileName, const std::vector<Ellipse>& ellipses, ResultData& resultdata)
 {
 	unsigned n = ellipses.size();
 	std::vector<std::string> resultString;
 	std::stringstream resultsitem;
 
-	resultsitem << n ;
+	resultsitem << "Number of detections: " << n ;
 	resultString.push_back(resultsitem.str());
 
 	for (unsigned i = 0; i < n; ++i)
 	{
 		const Ellipse& e = ellipses[i];
 		resultsitem.str("");
-		resultsitem << e._xc << "\t" << e._yc << "\t" 
-			<< e._a << "\t" << e._b << "\t" 
-			<< e._rad << "\t" << e._score;
+		resultsitem << std::fixed << std::setprecision(5) // 小数点以下5桁に固定
+                	<< std::setw(10) << e._xc
+                	<< std::setw(10) << e._yc
+                	<< std::setw(10) << e._a
+                	<< std::setw(10) << e._b
+                	<< std::setw(10) << e._rad
+                	<< std::setw(10) << e._score;
 		resultString.push_back(resultsitem.str());
 	}
+
+	resultsitem.str(""); resultString.push_back("");
+	resultsitem << "Number of matching craters: " << resultdata.matchingpoints;
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "                deltatheta: " << resultdata.deltatheta;
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "                     scale: " << resultdata.scale;
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+
+	resultString.push_back("");
+	resultsitem << "LSM estimated position: " << std::setw(12) << resultdata.LSMposition[0] << std::setw(12) << resultdata.LSMposition[1];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "PnP estimated position: " << std::setw(12) << resultdata.PnPposition[0] << std::setw(12) << resultdata.PnPposition[1] << std::setw(12) << resultdata.PnPposition[2];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "PnP estimated attitude: " << std::setw(12) << resultdata.PnPattitude[0] << std::setw(12) << resultdata.PnPattitude[1] << std::setw(12) << resultdata.PnPattitude[2];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+
+	resultString.push_back("");
+	resultsitem << "Crater Detection  Time: " << std::setw(10) << resultdata.times[0];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "Crater Matching   Time: " << std::setw(10) << resultdata.times[1];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "Pose   Estimation Time: " << std::setw(10) << resultdata.times[2];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+	resultsitem << "       Total      Time: " << std::setw(10) << resultdata.times[3];
+	resultString.push_back(resultsitem.str()); resultsitem.str("");
+
 	writeFile(fileName, resultString);
+
+	/*
 	for (int i = 0; i < resultString.size(); i++)
 	{
 		std::cout << resultString[i] << std::endl;
 	}
+	*/
 }
